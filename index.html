@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البوابة الرئيسية - الصف الأول</title>
+
+    <meta property="og:title" content="البوابة الرئيسية - الصف الأول">
+    <meta property="og:description" content="اختر البرنامج الذي تود متابعة حفظ الطلاب فيه.">
+    <meta property="og:image" itemprop="image" content="https://leaderboardqq.netlify.app/images/og-portal.jpg?v=1">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:type" content="website">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0f6246">
+    <link rel="icon" type="image/png" href="images/quran-icon.png">
+    <link rel="apple-touch-icon" href="images/quran-icon.png">
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/components.css" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="container">
+        <!-- Elevated Header -->
+        <header>
+            <div class="header-icon"></div>
+            <h1 class="banner-title">بوابة الصف الأول</h1>
+            <div class="banner-separator"></div>
+            <div class="banner-subtitle">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
+        </header>
+
+        <!-- Premium Portal Cards -->
+        <main class="portal-grid">
+            <a href="almanhaj.html" class="portal-card">
+                <h2 class="portal-title">منهج حفظ الصف الأول</h2>
+            </a>
+
+            <a href="juz_amma.html" class="portal-card">
+                <h2 class="portal-title">برنامج حفظ جزء عمَّ</h2>
+            </a>
+
+            <a href="juz_tabarak.html" class="portal-card">
+                <h2 class="portal-title">برنامج حفظ جزء تبارك</h2>
+            </a>
+        </main>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed: ', err));
+            });
+        }
+    </script>
+</body>
+
+</html>

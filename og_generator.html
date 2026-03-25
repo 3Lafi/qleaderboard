@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>💎 مولّد صور الصف الأول - الأيقونات والبانرات</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="images/quran-icon.png">
+    <link rel="apple-touch-icon" href="images/quran-icon.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+    <style>
+        * { font-family: 'Tajawal', system-ui, sans-serif !important; }
+
+        body { 
+            background: #0a4430; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 50px; 
+            padding: 50px; 
+            margin: 0;
+        }
+        
+        .instructions {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(10px);
+            padding: 30px 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 900px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h2.section-title {
+            color: #d4af37;
+            font-weight: 900;
+            font-size: 1.8rem;
+            margin: 0 0 10px 0;
+        }
+
+        p.section-desc {
+            color: #b0cfc4;
+            font-size: 1rem;
+            margin: 0 0 20px 0;
+        }
+
+        /* =================== تصميم البانر =================== */
+        .banner-preview {
+            width: 1200px;
+            height: 630px;
+            background: linear-gradient(145deg, #168a5c 0%, #0a4d36 100%);
+            position: relative;
+            overflow: hidden;
+            border-radius: 0; 
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.4);
+            padding: 60px;
+            box-sizing: border-box;
+        }
+        
+        /* الإطار الذهبي */
+        .banner-preview::after {
+            content: '';
+            position: absolute;
+            top: 25px; left: 25px; right: 25px; bottom: 25px;
+            border: 3px solid rgba(212, 175, 55, 0.45);
+            border-radius: 15px;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        /* أيقونة البانر */
+        .banner-icon {
+            width: 90px;
+            height: 90px;
+            object-fit: contain;
+            margin-bottom: 25px;
+            z-index: 2;
+            filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.5));
+        }
+
+        /* النص الرئيسي */
+        .og-title {
+            font-size: 100px;
+            font-weight: 900;
+            color: #ffffff;
+            text-shadow: 0 8px 25px rgba(0,0,0,0.3);
+            margin: 0 0 30px 0;
+            z-index: 2;
+            letter-spacing: -1px;
+            line-height: 1.2;
+        }
+
+        /* الخط الذهبي الفاصل */
+        .separator {
+            width: 220px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #d4af37, transparent);
+            margin-bottom: 30px;
+            z-index: 2;
+        }
+
+        /* اسم المدرسة */
+        .og-school {
+            font-size: 40px;
+            font-weight: 700;
+            color: #f9f1df;
+            z-index: 2;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* =================== أزرار التحميل =================== */
+        .download-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa862e 100%);
+            color: #fff;
+            padding: 18px 40px;
+            font-size: 20px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 900;
+            font-family: inherit;
+            box-shadow: 0 10px 20px rgba(212,175,55,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 15px;
+        }
+        .download-btn:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px rgba(212,175,55,0.45);
+        }
+
+        .section-divider {
+            width: 100%;
+            max-width: 1200px;
+            border: none;
+            border-top: 2px dashed rgba(212, 175, 55, 0.2);
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- قسم البانرات -->
+    <div class="instructions">
+        <h2 class="section-title">🖼️ مولّد بانرات الواتساب وتويتر</h2>
+        <p class="section-desc">اضغط الزر لتحميل صور البانر الأربع بجودة عالية جاهزة للنشر.</p>
+        <button class="download-btn" onclick="downloadAll(this)">📥 تحميل البانرات الأربعة (JPG)</button>
+        <p id="status-banners" style="margin-top:12px; font-weight:bold; color:#d4af37;"></p>
+    </div>
+
+    <!-- البانر 1: البوابة -->
+    <div id="banner-portal" class="banner-preview">
+        <img src="images/quran.png" class="banner-icon">
+        <div class="og-title">بوابة الصف الأول</div>
+        <div class="separator"></div>
+        <div class="og-school">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
+    </div>
+
+    <!-- البانر 2: المنهج -->
+    <div id="banner-almanhaj" class="banner-preview">
+        <img src="images/quran.png" class="banner-icon">
+        <div class="og-title">منهج حفظ الصف الأول</div>
+        <div class="separator"></div>
+        <div class="og-school">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
+    </div>
+
+    <!-- البانر 3: جزء عم -->
+    <div id="banner-amma" class="banner-preview">
+        <img src="images/quran.png" class="banner-icon">
+        <div class="og-title">برنامج حفظ جزء عمَّ</div>
+        <div class="separator"></div>
+        <div class="og-school">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
+    </div>
+
+    <!-- البانر 4: جزء تبارك -->
+    <div id="banner-tabarak" class="banner-preview">
+        <img src="images/quran.png" class="banner-icon">
+        <div class="og-title">برنامج حفظ جزء تبارك</div>
+        <div class="separator"></div>
+        <div class="og-school">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
+    </div>
+
+    <hr class="section-divider">
+
+    <!-- قسم الأيقونة - يرجى استخدام icon_generator.html بدلاً من هذا القسم -->
+    <div class="instructions">
+        <h2 class="section-title">💎 مولّد أيقونة الموقع والجوال الفخمة</h2>
+        <p class="section-desc">⚠️ للحصول على أيقونة بدون قص، استخدم ملف <strong style="color:#d4af37;">icon_generator.html</strong> المخصص لذلك.</p>
+    </div>
+
+    <script>
+        // تحميل خط Tajawal كـ base64 لتضمينه داخل الصورة المصدرة
+        let fontEmbedCSS = null;
+        let iconBase64 = null;
+
+        async function preloadFont() {
+            try {
+                const cssResp = await fetch('https://fonts.googleapis.com/css2?family=Tajawal:wght@500;700;900&display=swap');
+                let cssText = await cssResp.text();
+
+                // استخرج روابط ملفات الخط وحوّلها إلى base64
+                const urlMatches = [...cssText.matchAll(/url\(([^)]+)\)/g)];
+                for (const match of urlMatches) {
+                    const url = match[1].replace(/['"]/g, '');
+                    try {
+                        const fontResp = await fetch(url);
+                        const blob = await fontResp.blob();
+                        const b64 = await new Promise(res => {
+                            const r = new FileReader();
+                            r.onloadend = () => res(r.result);
+                            r.readAsDataURL(blob);
+                        });
+                        cssText = cssText.replace(match[0], `url(${b64})`);
+                    } catch {}
+                }
+                return cssText;
+            } catch (e) {
+                console.warn('تعذر تضمين الخط:', e);
+                return null;
+            }
+        }
+
+        async function preloadIcon() {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width = img.naturalWidth || img.width;
+                        canvas.height = img.naturalHeight || img.height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                        resolve(canvas.toDataURL('image/png'));
+                        console.log('✅ الأيقونة محوّلة عبر Canvas');
+                    } catch (e) {
+                        console.warn('Canvas تأمين منع التحويل:', e);
+                        resolve(null);
+                    }
+                };
+                img.onerror = () => {
+                    console.warn('فشل تحميل الأيقونة');
+                    resolve(null);
+                };
+                img.src = 'images/quran.png?v=' + Date.now();
+            });
+        }
+
+        // عند تحميل الصفحة، احضر الصورة والخط معاً
+        window.addEventListener('load', async () => {
+            // تحميل الخط
+            fontEmbedCSS = await preloadFont();
+            if (fontEmbedCSS) console.log('✅ الخط جاهز للتضمين');
+
+            // تحميل الأيقونة
+            iconBase64 = await preloadIcon();
+            if (iconBase64) {
+                document.querySelectorAll('.banner-icon').forEach(img => {
+                    img.src = iconBase64;
+                });
+                console.log('✅ الأيقونة جاهزة للتصدير');
+            }
+        });
+
+        async function downloadAll(btn) {
+            const status = document.getElementById('status-banners');
+            btn.innerText = '⏳ جاري المعالجة...';
+            btn.style.pointerEvents = 'none';
+            status.innerText = '';
+
+            await document.fonts.ready;
+            await new Promise(r => setTimeout(r, 1500));
+
+            const banners = [
+                { id: 'banner-portal',   name: 'og-portal.jpg' },
+                { id: 'banner-almanhaj', name: 'og-almanhaj.jpg' },
+                { id: 'banner-amma',     name: 'og-amma.jpg' },
+                { id: 'banner-tabarak',  name: 'og-tabarak.jpg' }
+            ];
+
+            let success = 0;
+            for (let b of banners) {
+                const el = document.getElementById(b.id);
+                try {
+                    const opts = {
+                        pixelRatio: 1,
+                        width: 1200,
+                        height: 630
+                    };
+                    if (fontEmbedCSS) opts.fontEmbedCSS = fontEmbedCSS;
+                    const dataUrl = await htmlToImage.toJpeg(el, { ...opts, quality: 0.95 });
+                    const link = document.createElement('a');
+                    link.download = b.name;
+                    link.href = dataUrl;
+                    link.click();
+                    success++;
+                    await new Promise(r => setTimeout(r, 600));
+                } catch (err) {
+                    console.error('خطأ في تصدير', b.name, err);
+                    status.innerText = '❌ خطأ أثناء التصدير: ' + (err?.message || JSON.stringify(err));
+                }
+            }
+
+            btn.innerText = '📥 تحميل البانرات الأربعة (PNG)';
+            btn.style.pointerEvents = '';
+            if (success > 0) {
+                status.innerText = success === 4 ? '✅ تم تحميل البانرات الأربعة بنجاح!' : `✅ تم تحميل ${success} من 4`;
+            }
+        }
+    </script>
+</body>
+</html>

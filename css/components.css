@@ -1,0 +1,488 @@
+/* Grid Layout */
+.grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+    gap: 30px; 
+    width: 100%; 
+}
+
+/* Premium Card Design */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    border-radius: 24px; 
+    padding: 30px;
+    box-shadow: var(--shadow-sm); 
+    border: 1px solid rgba(255,255,255,0.8);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    animation: fadeInCard 0.6s ease-out backwards;
+    display: flex; 
+    flex-direction: column; 
+    position: relative; 
+    overflow: hidden;
+}
+
+@media (hover: hover) { 
+    .card:hover { 
+        transform: translateY(-8px); 
+        box-shadow: var(--shadow-hover); 
+        border-color: rgba(15, 98, 70, 0.15);
+    } 
+}
+
+/* Stagger Animation for Cards */
+.card:nth-child(1) { animation-delay: 0.05s; }
+.card:nth-child(2) { animation-delay: 0.1s; }
+.card:nth-child(3) { animation-delay: 0.15s; }
+.card:nth-child(4) { animation-delay: 0.2s; }
+
+@keyframes fadeInCard { 
+    from { opacity: 0; transform: translateY(30px) scale(0.98); } 
+    to { opacity: 1; transform: translateY(0) scale(1); } 
+}
+
+/* Exceptional Gold Cards (100% Completion) - Original Look Restored & Enhanced */
+.card.gold-card {
+    background: #fff; 
+    border: 2px solid transparent;
+    background-image: linear-gradient(#fff, #fff), var(--gold-gradient);
+    background-origin: border-box; 
+    background-clip: padding-box, border-box;
+    box-shadow: var(--shadow-gold);
+}
+
+.card.gold-card .student-name { color: var(--gold-text); text-shadow: 0 1px 0 rgba(255,255,255,1); }
+.card.gold-card .progress-bar { background: var(--gold-gradient); box-shadow: 0 2px 5px rgba(218, 165, 32, 0.3); }
+.card.gold-card .percentage { color: var(--gold-text); }
+.card.gold-card .details-btn {
+    background: var(--gold-gradient); color: #fff;
+    box-shadow: 0 6px 15px rgba(182, 141, 64, 0.3); text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Crown Icon */
+.crown-icon { position: absolute; top: 15px; left: 20px; font-size: 1.5rem; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1)); z-index: 1; }
+@keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-3px); } 100% { transform: translateY(0px); } }
+
+/* Card Elements */
+.student-name { 
+    font-size: 1.5rem; 
+    font-weight: 900; 
+    margin-bottom: 25px; 
+    color: var(--primary-color); 
+    position: relative; 
+    z-index: 1; 
+}
+
+.progress-container { 
+    background-color: var(--border-subtle); 
+    border-radius: 50px; 
+    height: 14px; 
+    margin-bottom: 15px; 
+    overflow: hidden; 
+    position: relative; 
+    z-index: 1; 
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.progress-bar { 
+    background: var(--progress-gradient); 
+    height: 100%; 
+    border-radius: 50px; 
+    width: 0%; 
+    transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1); 
+    position: relative;
+}
+
+.stats { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+    margin-bottom: 25px; 
+    position: relative; 
+    z-index: 1; 
+}
+
+.surah-count-badge, .percentage-badge { 
+    color: var(--primary-color); 
+    font-weight: 900; 
+    font-size: 0.95rem; 
+    background: rgba(32, 160, 117, 0.08); 
+    padding: 0 14px; /* Removed vertical padding to let flex handle centering */
+    border-radius: 12px; 
+    border: 1px solid rgba(32, 160, 117, 0.15); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    min-width: 80px;
+    height: 40px;
+    line-height: 1; /* Normalize for Tajawal font */
+}
+
+.card.gold-card .surah-count-badge, 
+.card.gold-card .percentage-badge { 
+    background: rgba(212, 175, 55, 0.1); 
+    color: var(--gold-text); 
+    border-color: rgba(212, 175, 55, 0.15); 
+}
+
+/* Premium Buttons - Consistent Design */
+.details-btn { 
+    background: var(--primary-gradient); 
+    color: #fff; border: none; padding: 14px 20px; 
+    border-radius: 14px; cursor: pointer; font-weight: 800; font-size: 1rem;
+    width: 100%; font-family: inherit; 
+    box-shadow: 0 6px 15px rgba(15, 98, 70, 0.25); 
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); 
+    outline: none; position: relative; z-index: 1; overflow: hidden;
+}
+.details-btn:active { transform: scale(0.97); }
+
+/* Surahs List Dropdown */
+.surahs-list { 
+    display: none; margin-top: 25px; padding-top: 25px; 
+    border-top: 2px dashed var(--border-subtle); width: 100%; 
+    animation: fadeIn 0.4s ease-out; position: relative; z-index: 1; 
+}
+.tags-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; }
+
+.surah-tag { 
+    background: var(--bg-color); color: var(--primary-dark); 
+    border: 1px solid var(--border-subtle); padding: 10px 5px; 
+    border-radius: 10px; font-size: 0.85rem; font-weight: 800; 
+    display: flex; justify-content: center; align-items: center; 
+    text-align: center; width: 100%; transition: all 0.2s;
+}
+.surah-tag:hover {
+    background: var(--primary-color); color: #fff; transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(15, 98, 70, 0.2);
+}
+
+.surah-tag.tag-memorized {
+    background: rgba(32, 160, 117, 0.12); /* Matches Percentage and details button */
+    color: var(--primary-color);
+    font-weight: bold;
+    border: 1px solid rgba(32, 160, 117, 0.25);
+}
+.surah-tag.tag-memorized:hover {
+    background: var(--primary-gradient);
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(32, 160, 117, 0.2);
+    border-color: transparent;
+}
+.surah-tag.tag-skipped {
+    background: #ffebee;
+    color: #d32f2f;
+    border: 1px solid #ffcdd2;
+    font-weight: bold;
+}
+
+.card.gold-card .surah-tag,
+.card.gold-card .surah-tag.tag-memorized { 
+    background: var(--gold-light); color: var(--gold-text); border: 1px solid rgba(212, 175, 55, 0.3); 
+}
+.card.gold-card .surah-tag:hover,
+.card.gold-card .surah-tag.tag-memorized:hover { 
+    background: var(--gold-gradient); color: #fff; box-shadow: 0 4px 8px rgba(212, 175, 55, 0.2); border: 1px solid transparent; 
+}
+
+/* Portal Cards - Aligned Colors */
+.portal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
+    width: 100%;
+    margin-top: 20px;
+}
+
+.portal-card {
+    background: var(--card-bg);
+    border-radius: 28px;
+    padding: 40px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(255,255,255,1);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    position: relative;
+    overflow: hidden;
+}
+
+.portal-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px;
+    background: var(--primary-gradient); opacity: 0; transition: opacity 0.3s;
+}
+
+.portal-card:hover {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(15, 98, 70, 0.1);
+}
+.portal-card:hover::before { opacity: 1; }
+
+.portal-title {
+    font-size: 1.8rem;
+    font-weight: 900;
+    color: var(--primary-dark);
+    margin: 0;
+    line-height: 1.4;
+    transition: color 0.3s ease;
+}
+
+.portal-card:hover .portal-title { color: var(--primary-color); }
+
+/* Skeleton Loader High-End */
+.skeleton-wrapper { display: none; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 30px; width: 100%; }
+.skeleton-card { background: #fff; padding: 30px; border-radius: 24px; border: 1px solid var(--border-subtle); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
+.skeleton-pulse { background: linear-gradient(90deg, #f0f4f2 0%, #e0e8e4 50%, #f0f4f2 100%); background-size: 200% 100%; animation: shimmer 1.5s infinite linear; border-radius: 8px; }
+.s-text { height: 28px; width: 60%; margin-bottom: 30px; border-radius: 8px; }
+.s-bar-bg { height: 14px; width: 100%; margin-bottom: 25px; border-radius: 14px; }
+.s-stats { 
+    display: flex; 
+    justify-content: space-between; 
+    margin-bottom: 25px; 
+    padding: 0 5px;
+}
+.s-stat-item { height: 40px; width: 38%; border-radius: 12px; }
+.s-btn { height: 50px; border-radius: 14px; width: 100%; margin-top: 10px; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+/* ========================================================================= */
+/* إنجاز الفصل (Class Progress) Banner Premium UI */
+/* ========================================================================= */
+.class-progress-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 35px;
+    color: var(--primary-dark);
+    box-shadow: 0 10px 30px rgba(15, 98, 70, 0.08); /* Soft green shadow */
+    border: 1px solid rgba(15, 98, 70, 0.15); /* Subtle green border */
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Elegant top gradient bar matching the portal cards */
+.class-progress-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background: var(--primary-gradient);
+}
+
+/* Integrated Class Progress Banner (Merged at bottom of header) */
+/* ========================================================================= */
+.merged-progress-container {
+    position: absolute;
+    bottom: 20px; /* Aligned with header gold border bottom */
+    left: 20px;   /* Aligned with header gold border left */
+    right: 20px;  /* Aligned with header gold border right */
+    width: calc(100% - 40px);
+    background: rgba(255, 255, 255, 0.08); /* Light frosting */
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 5px; 
+    border-top: none; 
+    /* Increased radius to sit nicely inside the golden frame */
+    border-radius: 18px; 
+    overflow: hidden;
+    z-index: 5;
+    /* Inset shadow seals the bottom edge to prevent antialiasing glow */
+    box-shadow: inset 0 -3px 8px rgba(0,0,0,0.1); 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.m-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 8px 20px 12px 20px; /* Aligned with parent 20px margin */
+}
+
+.no-bar .m-progress-header {
+    justify-content: center; 
+    padding: 2px 30px 10px 30px; /* Reduced vertical breathing space to fix excess height */
+}
+
+.m-progress-surah {
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    background: rgba(15, 98, 70, 0.45); /* Darker emerald glass for better contrast */
+    padding: 0 18px;
+    height: 40px;
+    min-width: 80px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2); 
+    backdrop-filter: blur(15px); /* Maximized blur */
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    overflow: hidden;
+    position: relative;
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.m-progress-percentage {
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: #fff;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    background: rgba(15, 98, 70, 0.45); /* Darker emerald glass */
+    padding: 0 18px;
+    height: 40px;
+    min-width: 80px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+}
+
+.m-progress-bar-container {
+    width: calc(100% - 40px);
+    margin: 18px auto 10px auto; /* Centered with top breathing room */
+    height: 14px; /* Synchronized with student card (14px) */
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 50px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+    padding: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.m-progress-bar-fill {
+    height: 100%;
+    background: #fff; 
+    border-radius: 50px;
+    width: 0%;
+    transition: width 1.5s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    box-shadow: none; /* Kept glow removed as requested */
+}
+
+
+/* Error UI */
+#error-msg { 
+    display: none; text-align: center; background: #fff; padding: 40px; border-radius: 24px; 
+    box-shadow: var(--shadow-md); border: 2px solid #fee2e2; 
+    color: #b91c1c; font-weight: 800; font-size: 1.2rem; max-width: 500px; margin: 40px auto; animation: fadeIn 0.5s; 
+}
+.retry-btn { margin-top: 20px; padding: 12px 30px; background-color: #b91c1c; color: white; border: none; border-radius: 12px; cursor: pointer; font-weight: bold; font-size: 1rem; transition: transform 0.2s; }
+.retry-btn:hover { transform: scale(1.05); }
+
+/* ========================================================================= */
+/* Mobile UX Optimizations (PWA Experience) */
+/* ========================================================================= */
+@media (max-width: 480px) {
+    header {
+        min-height: 260px !important; /* Significantly reduced for mobile */
+        padding: 40px 15px 120px 15px !important; 
+        margin-bottom: 25px !important;
+        border-radius: 24px !important;
+        gap: 10px !important;
+    }
+
+    header::after {
+        top: 15px !important; left: 15px !important; right: 15px !important; bottom: 15px !important;
+        border-width: 1.5px !important;
+        border-radius: 18px !important;
+    }
+
+    .header-icon {
+        width: 65px !important;
+        height: 65px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .banner-title {
+        font-size: 1.9rem !important;
+    }
+
+    .banner-subtitle {
+        font-size: 0.9rem !important;
+    }
+
+    .merged-progress-container {
+        bottom: 15px !important; 
+        left: 15px !important; 
+        right: 15px !important; 
+        width: calc(100% - 300px); /* Will be overridden by left/right */
+        width: auto !important;
+        border-radius: 15px !important;
+    }
+
+    .m-progress-header {
+        flex-direction: row; /* Force side-by-side */
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 15px !important;
+    }
+    
+    .m-progress-surah, .m-progress-percentage {
+        width: auto;
+        flex: 0 1 auto;
+        font-size: 0.8rem;
+        height: 35px; /* Sync with student card mobile height */
+        padding: 0 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .m-progress-bar-container {
+        width: calc(100% - 30px) !important;
+        margin: 15px auto 5px auto !important;
+        height: 12px !important;
+    }
+
+    .card {
+        padding: 20px;
+    }
+    
+    .grid {
+        gap: 15px;
+    }
+    
+    .tags-container {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+    }
+    
+    .class-progress-card {
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+
+    /* Extra compact header for pages without progress bar (like Juz Amma/Tabarak initially) */
+    header:has(.no-bar) {
+        min-height: 200px !important;
+        padding-bottom: 80px !important;
+    }
+}

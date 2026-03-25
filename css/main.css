@@ -1,0 +1,192 @@
+/* 
+  Premium UI/UX Design System
+  Optimized for Tajawal Font
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+
+:root {
+    /* Primary Colors - Richer Islamic Green */
+    --primary-dark: #07402e;
+    --primary-color: #0f6246;       
+    --primary-light: #20a075; 
+    
+    /* Golden Accents - New Brilliant Gold */
+    --gold-text: #AA862E;           
+    --gold-light: #f9f1df;
+    
+    /* Gradients REVERSED for buttons and general elements as requested */
+    --primary-gradient: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    --primary-gradient-hover: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+    
+    --gold-gradient: linear-gradient(135deg, #F9D976 0%, #AA862E 100%);
+    --gold-gradient-hover: linear-gradient(135deg, #AA862E 0%, #F9D976 100%);
+    
+    --header-gradient: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    --progress-gradient: var(--header-gradient);
+
+    /* UI Colors */
+    --bg-color: #f4f9f7;
+    --card-bg: rgba(255, 255, 255, 0.98);
+    --text-main: #0c2b20;          
+    --text-muted: #4a6c5f;
+    --border-subtle: rgba(15, 98, 70, 0.08);
+
+    /* Shadows */
+    --shadow-sm: 0 4px 10px rgba(15, 98, 70, 0.04);
+    --shadow-md: 0 10px 30px rgba(15, 98, 70, 0.08);
+    --shadow-hover: 0 15px 40px rgba(15, 98, 70, 0.12);
+    --shadow-gold: 0 15px 40px rgba(212, 175, 55, 0.15);
+}
+
+* { 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+    font-family: 'Tajawal', sans-serif !important; 
+}
+
+body {
+    margin: 0;
+    color: var(--text-main);
+    background-color: var(--bg-color);
+    background-image: 
+        radial-gradient(circle at 100% 0%, rgba(32, 160, 117, 0.05) 0%, transparent 25%),
+        radial-gradient(circle at 0% 100%, rgba(212, 175, 55, 0.05) 0%, transparent 25%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 15px;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container { 
+    width: 100%; 
+    max-width: 1000px; 
+    position: relative;
+    z-index: 1;
+}
+
+/* Header & Banner - Premium Glass/Glow */
+header {
+    width: 100%;
+    min-height: 400px; /* Adjusted for Quran icon + text + Progress */
+    margin-bottom: 40px;
+    background: linear-gradient(145deg, #168a5c 0%, #0a4d36 100%);
+    border-radius: 28px; 
+    box-shadow: 0 25px 60px rgba(7, 64, 46, 0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 60px 20px 140px 20px; 
+    position: relative;
+    overflow: hidden;
+    gap: 15px;
+}
+
+/* Golden Inner Border */
+header::after {
+    content: '';
+    position: absolute;
+    top: 20px; left: 20px; right: 20px; bottom: 20px;
+    border: 2.5px solid rgba(249, 217, 118, 0.35);
+    border-radius: 18px;
+    pointer-events: none;
+    z-index: 10; /* Above all background layers including progress bar */
+}
+
+/* Quran Icon Style */
+.header-icon {
+    width: 80px;
+    height: 80px;
+    background-image: url('../images/quran.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    margin-bottom: 10px;
+    z-index: 2;
+    filter: drop-shadow(0 0 15px rgba(249, 217, 118, 0.4));
+}
+
+/* Decorative Header Pattern */
+header::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.05) 2px, transparent 2px) 0 0;
+    background-size: 45px 45px;
+    transform: rotate(20deg);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.banner-title {
+    font-size: clamp(2.4rem, 6vw, 3.5rem); 
+    font-weight: 900; 
+    margin: 0;
+    line-height: 1.4; 
+    color: #ffffff;
+    text-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 2;
+    letter-spacing: -0.5px;
+}
+
+.banner-subtitle {
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.9);
+    margin: 0;
+    line-height: 1.5;
+    z-index: 2;
+}
+
+/* الخط الذهبي الفاصل بين العنوان واسم المؤسسة */
+.banner-separator {
+    width: 220px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #d4af37, transparent);
+    z-index: 2;
+    flex-shrink: 0;
+}
+
+/* Premium Back Button */
+.back-btn {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #fff;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-top: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 12px 28px;
+    border-radius: 50px;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+}
+
+.back-btn svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+}
+
+/* Utility Animations */
+@keyframes fadeIn { 
+    from { opacity: 0; transform: translateY(-10px); } 
+    to { opacity: 1; transform: translateY(0); } 
+}
