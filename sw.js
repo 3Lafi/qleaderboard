@@ -1,4 +1,4 @@
-const CACHE_NAME = 'quran-app-cache-v2';
+const CACHE_NAME = 'quran-app-cache-v3';
 const urlsToCache = [
   './',
   './index.html',
@@ -6,43 +6,50 @@ const urlsToCache = [
   './juz_amma.html',
   './juz_tabarak.html',
   './css/main.css',
-  './css/components.css'
+  './css/components.css',
+  './js/core/config.js',
+  './js/data/api/GoogleSheetsApi.js',
+  './js/data/repositories/CurriculumRepository.js',
+  './js/domain/models/Student.js',
+  './js/domain/usecases/GetCurriculumData.js',
+  './js/presentation/views/StudentCardView.js',
+  './js/presentation/views/DashboardView.js',
+  './js/presentation/controllers/DashboardController.js',
+  './js/presentation/app.js',
+  './images/quran.png',
+  './images/quran-icon.png',
 ];
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(urlsToCache))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
   );
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.filter(name => name.startsWith('quran-app-cache-') && name !== CACHE_NAME)
+    caches.keys().then(cacheNames =>
+      Promise.all(
+        cacheNames
+          .filter(name => name.startsWith('quran-app-cache-') && name !== CACHE_NAME)
           .map(name => caches.delete(name))
-      );
-    })
+      )
+    )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-  // Use Network First, fallback to Cache strategy
   event.respondWith(
     fetch(event.request)
       .then(networkResponse => {
-        // Only cache successful GET requests
         if (event.request.method === 'GET' && networkResponse.ok) {
           const clone = networkResponse.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }
         return networkResponse;
       })
-      .catch(() => {
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
