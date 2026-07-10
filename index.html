@@ -4,12 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>البوابة الرئيسية - الصف الأول</title>
+    <title>وسام — لوحات متابعة حفظ القرآن الكريم</title>
 
-    <meta property="og:title" content="البوابة الرئيسية - الصف الأول">
-    <meta property="og:description" content="اختر البرنامج الذي تود متابعة حفظ الطلاب فيه.">
-    <meta property="og:url" content="https://3lafi.github.io/qleaderboard/">
-    <meta property="og:image" itemprop="image" content="https://3lafi.github.io/qleaderboard/images/og-portal.jpg?v=1">
+    <meta property="og:title" content="وسام — لوحات متابعة حفظ القرآن الكريم">
+    <meta property="og:description" content="منصة تفاعلية للمعلمين لإنشاء لوحات متابعة حفظ القرآن الكريم ومشاركتها مع الطلاب وأولياء الأمور.">
+    <meta property="og:url" content="https://3lafi.github.io/Wisam/">
+    <meta property="og:image" itemprop="image" content="https://3lafi.github.io/Wisam/images/og-portal.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
@@ -21,35 +21,24 @@
     <link rel="apple-touch-icon" href="images/quran-icon.png">
     <link href="css/main.css" rel="stylesheet">
     <link href="css/components.css" rel="stylesheet">
+    <link href="css/admin.css" rel="stylesheet">
 </head>
 
 <body>
 
     <div class="container">
-        <!-- Elevated Header -->
-        <header>
-            <div class="header-icon"></div>
-            <h1 class="banner-title">بوابة الصف الأول</h1>
-            <div class="banner-separator"></div>
-            <div class="banner-subtitle">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
-        </header>
-
-        <!-- Premium Portal Cards -->
-        <main class="portal-grid">
-            <a href="almanhaj.html" class="portal-card">
-                <h2 class="portal-title">منهج حفظ الصف الأول</h2>
-            </a>
-
-            <a href="juz_amma.html" class="portal-card">
-                <h2 class="portal-title">برنامج حفظ جزء عمَّ</h2>
-            </a>
-
-            <a href="juz_tabarak.html" class="portal-card">
-                <h2 class="portal-title">برنامج حفظ جزء تبارك</h2>
-            </a>
-        </main>
+        <div id="app">
+            <div class="page-loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
     </div>
 
+    <noscript>
+        <p style="text-align:center; font-weight:bold;">هذا التطبيق يتطلب تفعيل JavaScript في المتصفح.</p>
+    </noscript>
+
+    <script type="module" src="js/app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {

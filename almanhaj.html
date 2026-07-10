@@ -1,113 +1,19 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>منهج حفظ الصف الأول</title>
-
-    <meta property="og:title" content="منهج حفظ الصف الأول">
-    <meta property="og:description" content="لوحة تفاعلية لمتابعة حفظ الطلاب للمنهج.">
-    <meta property="og:url" content="https://3lafi.github.io/qleaderboard/almanhaj.html">
-    <meta property="og:image" itemprop="image" content="https://3lafi.github.io/qleaderboard/images/og-almanhaj.jpg?v=1">
-    <meta property="og:image:type" content="image/jpeg">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
-    <meta property="og:type" content="website">
-
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0f6246">
-    <link rel="icon" type="image/png" href="images/quran-icon.png">
-    <link rel="apple-touch-icon" href="images/quran-icon.png">
-    <link rel="stylesheet" href="css/main.css?v=3">
-    <link rel="stylesheet" href="css/components.css?v=3">
+    <meta http-equiv="refresh" content="0; url=./index.html#/">
 </head>
-
-<body data-curriculum-type="المنهج">
-
-    <div class="container">
-        <!-- Elevated Header -->
-        <header>
-            <div class="header-icon"></div>
-            <h1 class="banner-title">منهج حفظ الصف الأول</h1>
-            <div class="banner-separator"></div>
-            <div class="banner-subtitle">ابتدائية هشام بن عمار لتحفيظ القرآن ببريدة</div>
-
-            <!-- حاوية شريط إنجاز الفصل المدمجة مع الهيدر -->
-            <div id="classProgressContainer" class="merged-progress-container" style="display: none;">
-                <div class="skeleton-pulse"
-                    style="width: calc(100% - 40px); margin: 20px auto 10px auto; height: 14px; border-radius: 50px; background: rgba(255,255,255,0.15);">
-                </div>
-                <div class="m-progress-header" style="padding: 8px 20px 12px 20px;">
-                    <div class="skeleton-pulse"
-                        style="width: 140px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2);">
-                    </div>
-                    <div class="skeleton-pulse"
-                        style="width: 80px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2);">
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <!-- شريط إنجاز الفصل (يظهر فقط إذا تم إضافة طالب باسم "إنجاز الفصل" في الشيت) -->
-        <div id="classProgressBanner"></div>
-
-        <!-- Skeleton Loader -->
-        <div id="skeletonLoader" class="skeleton-wrapper">
-            <div class="skeleton-card">
-                <div class="skeleton-pulse s-text"></div>
-                <div class="skeleton-pulse s-bar-bg"></div>
-                <div class="s-stats">
-                    <div class="skeleton-pulse s-stat-item"></div>
-                    <div class="skeleton-pulse s-stat-item"></div>
-                </div>
-                <div class="skeleton-pulse s-btn"></div>
-            </div>
-            <div class="skeleton-card">
-                <div class="skeleton-pulse s-text"></div>
-                <div class="skeleton-pulse s-bar-bg"></div>
-                <div class="s-stats">
-                    <div class="skeleton-pulse s-stat-item"></div>
-                    <div class="skeleton-pulse s-stat-item"></div>
-                </div>
-                <div class="skeleton-pulse s-btn"></div>
-            </div>
-            <div class="skeleton-card">
-                <div class="skeleton-pulse s-text"></div>
-                <div class="skeleton-pulse s-bar-bg"></div>
-                <div class="s-stats">
-                    <div class="skeleton-pulse s-stat-item"></div>
-                    <div class="skeleton-pulse s-stat-item"></div>
-                </div>
-                <div class="skeleton-pulse s-btn"></div>
-            </div>
-        </div>
-
-        <main id="studentsGrid" class="grid"></main>
-
-        <div id="error-msg">
-            <p>يتعذر الاتصال بقاعدة البيانات حالياً.</p>
-            <button class="retry-btn" onclick="location.reload()">تحديث الصفحة</button>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="js/core/config.js?v=3"></script>
-    <script src="js/data/api/GoogleSheetsApi.js?v=3"></script>
-    <script src="js/data/repositories/CurriculumRepository.js?v=3"></script>
-    <script src="js/domain/models/Student.js?v=3"></script>
-    <script src="js/domain/usecases/GetCurriculumData.js?v=3"></script>
-    <script src="js/presentation/views/StudentCardView.js?v=3"></script>
-    <script src="js/presentation/views/DashboardView.js?v=3"></script>
-    <script src="js/presentation/controllers/DashboardController.js?v=3"></script>
-    <script src="js/presentation/app.js?v=3"></script>
+<body>
+    <p>تم نقل هذه الصفحة. <a href="./index.html#/">اضغط هنا</a> إن لم يتم تحويلك تلقائياً.</p>
     <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed: ', err));
-            });
-        }
+        // بعد استيراد بيانات "المنهج" من صفحة الاستيراد داخل التطبيق، ضع معرّف اللوحة هنا
+        // ليعيد هذا الرابط القديم توجيه الزوار مباشرة إلى اللوحة العامة الجديدة
+        const BOARD_ID = 'PASTE_BOARD_ID';
+        const target = BOARD_ID.startsWith('PASTE_') ? './index.html#/' : `./index.html#/b/${BOARD_ID}`;
+        location.replace(target);
     </script>
 </body>
-
 </html>

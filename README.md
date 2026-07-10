@@ -1,41 +1,44 @@
-# 📖 بوابة الصف الأول - ابتدائية هشام بن عمار
+# 📖 وسام
 
-منصة تفاعلية لمتابعة حفظ طلاب الصف الأول لكتاب الله الكريم.
+منصة تفاعلية تتيح لأي معلم إنشاء لوحة أو أكثر لمتابعة حفظ طلابه للقرآن الكريم (كاملاً، أو أجزاء محددة، أو سوراً مخصصة)، وتسجيل الحفظ سورةً سورةً، ومشاركة اللوحة برابط عام دون حاجة الزوار لتسجيل الدخول.
 
-## الصفحات
+## المزايا
 
-| الصفحة | الوصف |
-|--------|-------|
-| `index.html` | البوابة الرئيسية |
-| `almanhaj.html` | منهج حفظ الصف الأول |
-| `juz_amma.html` | برنامج حفظ جزء عم |
-| `juz_tabarak.html` | برنامج حفظ جزء تبارك |
+- تسجيل دخول للمعلمين عبر Google أو البريد الإلكتروني/كلمة المرور
+- إنشاء لوحات متعددة، لكل لوحة إعداداتها الخاصة (اسم المدرسة، الفصل، نطاق المنهج، اتجاه الحفظ، الخصوصية)
+- نطاق حفظ مرن: القرآن كاملاً، أجزاء محددة، أو تحديد سور مخصصة
+- نسبة الحفظ محسوبة موزونة بعدد الآيات، مع ترتيب تلقائي للطلاب
+- تسجيل حفظ سريع بلمسة واحدة لكل سورة
+- رابط مشاركة عام لكل لوحة، يتحدّث لحظياً
+- أداة استيراد للبيانات القديمة من Google Sheets
 
 ## التقنيات
 
-- HTML / CSS / JavaScript (Vanilla)
-- Google Sheets API كمصدر بيانات
+- HTML / CSS / JavaScript (Vanilla، بدون أدوات بناء) — ES Modules
+- Firebase Authentication + Firestore
 - PWA (Service Worker + Web Manifest)
+- توجيه من جانب العميل عبر الهاش (Hash Router) ليعمل على GitHub Pages
+
+## الإعداد
+
+1. أنشئ مشروعاً في [console.firebase.google.com](https://console.firebase.google.com)
+2. فعّل Authentication (Google + Email/Password) وأضف نطاق الاستضافة إلى Authorized domains
+3. أنشئ قاعدة بيانات Firestore وانشر قواعد `firestore.rules`
+4. انسخ إعدادات المشروع (`firebaseConfig`) إلى [js/core/firebase.js](js/core/firebase.js)
 
 ## هيكل المشروع
 
 ```
-├── index.html
-├── almanhaj.html
-├── juz_amma.html
-├── juz_tabarak.html
+├── index.html                 نقطة الدخول (تطبيق صفحة واحدة)
 ├── manifest.json
 ├── sw.js
+├── firestore.rules
 ├── css/
-│   ├── main.css
-│   └── components.css
-├── js/
-│   ├── core/config.js
-│   ├── data/
-│   ├── domain/
-│   └── presentation/
-└── images/
-    ├── quran.png
-    ├── quran-icon.png
-    └── og-*.jpg
+├── images/
+└── js/
+    ├── app.js                 نقطة الانطلاق
+    ├── core/                  الإعدادات، بيانات القرآن، المصادقة، التوجيه
+    ├── data/                  الوصول إلى Firestore والاستيراد القديم
+    ├── domain/                نماذج اللوحة/الطالب ومنطق الترتيب
+    └── presentation/          الصفحات والمكوّنات
 ```

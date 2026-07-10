@@ -1,11 +1,11 @@
 {
-  "name": "مقرأة هشام بن عمار",
-  "short_name": "مقرأة هشام",
-  "description": "منصة تفاعلية لمتابعة حفظ القرآن الكريم",
+  "name": "وسام",
+  "short_name": "وسام",
+  "description": "منصة تفاعلية للمعلمين لإنشاء لوحات متابعة حفظ القرآن الكريم ومشاركتها",
   "display": "standalone",
   "background_color": "#0a4d36",
   "theme_color": "#0f6246",
-  "start_url": "/qleaderboard/index.html",
+  "start_url": "/Wisam/index.html",
   "icons": [
     {
       "src": "./images/quran-icon.png",
