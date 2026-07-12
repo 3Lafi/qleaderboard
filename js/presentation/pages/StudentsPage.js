@@ -72,10 +72,15 @@ export default async function StudentsPage(container, { params }) {
         host.innerHTML = `<div class="students-list">${students.map(studentRowHtml).join('')}</div>`;
 
         host.querySelectorAll('.student-row-header').forEach(header => {
-            header.addEventListener('click', () => {
+            const toggle = () => {
                 const id = header.closest('.student-row').dataset.id;
                 expandedId = expandedId === id ? null : id;
                 renderList();
+            };
+            header.addEventListener('click', toggle);
+            header.addEventListener('keydown', e => {
+                if (e.target !== header) return; // تفادي التفعيل عند الضغط على Enter داخل أزرار إعادة التسمية/الحذف
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
             });
         });
 
@@ -176,16 +181,16 @@ export default async function StudentsPage(container, { params }) {
         const isExpanded = expandedId === student.id;
         return `
             <div class="student-row ${student.isCompleted ? 'completed' : ''}" data-id="${student.id}">
-                <div class="student-row-header">
+                <div class="student-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}" aria-controls="expand-${student.id}">
                     ${student.isCompleted ? '<span style="font-size:1.2rem;">👑</span>' : ''}
                     <span class="student-row-name">${escapeHtml(student.name)}</span>
                     <div class="mini-progress"><div class="mini-progress-fill" style="width:${student.progressPercentage}%;"></div></div>
                     <span class="student-row-pct">${student.progressPercentage}%</span>
-                    <button class="menu-btn" data-rename="${student.id}" title="إعادة تسمية">✎</button>
-                    <button class="menu-btn" data-delete="${student.id}" title="حذف">🗑</button>
+                    <button class="menu-btn" data-rename="${student.id}" title="إعادة تسمية" aria-label="إعادة تسمية ${escapeHtml(student.name)}">✎</button>
+                    <button class="menu-btn" data-delete="${student.id}" title="حذف" aria-label="حذف ${escapeHtml(student.name)}">🗑</button>
                 </div>
                 ${isExpanded ? `
-                    <div class="student-expand">
+                    <div class="student-expand" id="expand-${student.id}">
                         <div class="student-expand-meta">
                             <span class="expand-meta-count">${student.formattedSurahsCount}</span>
                             <span>اضغط على السورة لتسجيل الحفظ</span>

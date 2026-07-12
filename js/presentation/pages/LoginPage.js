@@ -37,7 +37,7 @@ export default function LoginPage(container, { navigate }) {
         ${bannerHeader({ title: 'دخول المعلمين', subtitle: 'سجّل الدخول لإنشاء وإدارة لوحات الحفظ' })}
         <div class="auth-card">
             <h2 class="auth-title" id="authTitle">تسجيل الدخول</h2>
-            <div class="auth-error" id="authError"></div>
+            <div class="auth-error" id="authError" role="alert"></div>
 
             <button class="google-btn" id="googleBtn" type="button">
                 <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l6-6C34.9 5.1 29.7 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21 21-9.4 21-21c0-1.2-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 15.5 18.9 12 24 12c3.1 0 5.8 1.1 8 3l6-6C34.9 5.1 29.7 3 24 3 16.3 3 9.6 7.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 45c5.6 0 10.7-1.9 14.6-5.4l-6.7-5.7C29.8 35.6 27 36.5 24 36.5c-5.3 0-9.7-3.4-11.3-8l-6.6 5.1C9.5 40.6 16.2 45 24 45z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.3-4.1 5.7l6.7 5.7C40.9 36.8 45 31 45 24c0-1.2-.1-2.4-.4-3.5z"/></svg>
@@ -48,15 +48,15 @@ export default function LoginPage(container, { navigate }) {
 
             <form id="emailForm">
                 <div class="form-group" id="nameGroup" style="display:none;">
-                    <label class="form-label">الاسم</label>
+                    <label class="form-label" for="nameInput">الاسم</label>
                     <input type="text" class="form-input" id="nameInput" autocomplete="name">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">البريد الإلكتروني</label>
+                    <label class="form-label" for="emailInput">البريد الإلكتروني</label>
                     <input type="email" class="form-input" id="emailInput" autocomplete="email" required>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">كلمة المرور</label>
+                    <label class="form-label" for="passwordInput">كلمة المرور</label>
                     <input type="password" class="form-input" id="passwordInput" autocomplete="current-password" required minlength="6">
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%;" id="submitBtn">تسجيل الدخول</button>

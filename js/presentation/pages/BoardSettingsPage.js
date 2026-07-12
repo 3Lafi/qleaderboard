@@ -38,16 +38,16 @@ export default async function BoardSettingsPage(container, { params, navigate })
         <form id="boardForm">
             <div class="form-card">
                 <div class="form-group">
-                    <label class="form-label">اسم اللوحة *</label>
+                    <label class="form-label" for="fName">اسم اللوحة *</label>
                     <input type="text" class="form-input" id="fName" required maxlength="100" value="${escapeHtml(settings.name)}" placeholder="مثال: حلقة الفجر — المستوى الثاني">
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">اسم المدرسة / الحلقة</label>
+                        <label class="form-label" for="fSchool">اسم المدرسة / الحلقة</label>
                         <input type="text" class="form-input" id="fSchool" maxlength="150" value="${escapeHtml(settings.schoolName)}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">اسم الفصل / المجموعة</label>
+                        <label class="form-label" for="fClass">اسم الفصل / المجموعة</label>
                         <input type="text" class="form-input" id="fClass" maxlength="100" value="${escapeHtml(settings.classLabel)}">
                     </div>
                 </div>
@@ -61,27 +61,27 @@ export default async function BoardSettingsPage(container, { params, navigate })
                         <div class="toggle-label">اتجاه الحفظ</div>
                         <p class="form-hint" style="margin-top:2px;">عكسي: من الناس صعوداً (المعتاد في التحفيظ) — طردي: من الفاتحة</p>
                     </div>
-                    <div class="seg-tabs" style="width:220px; margin-bottom:0;">
-                        <button type="button" class="seg-tab ${settings.direction !== 'forward' ? 'active' : ''}" data-dir="reverse">عكسي</button>
-                        <button type="button" class="seg-tab ${settings.direction === 'forward' ? 'active' : ''}" data-dir="forward">طردي</button>
+                    <div class="seg-tabs" style="width:220px; margin-bottom:0;" role="group" aria-label="اتجاه الحفظ">
+                        <button type="button" class="seg-tab ${settings.direction !== 'forward' ? 'active' : ''}" data-dir="reverse" aria-pressed="${settings.direction !== 'forward'}">عكسي</button>
+                        <button type="button" class="seg-tab ${settings.direction === 'forward' ? 'active' : ''}" data-dir="forward" aria-pressed="${settings.direction === 'forward'}">طردي</button>
                     </div>
                 </div>
                 <div class="toggle-row">
-                    <span class="toggle-label">لوحة عامة (رابط مشاركة بدون تسجيل دخول)</span>
+                    <span class="toggle-label" id="fPublicLabel">لوحة عامة (رابط مشاركة بدون تسجيل دخول)</span>
                     <label class="toggle">
-                        <input type="checkbox" id="fPublic" ${settings.isPublic ? 'checked' : ''}>
+                        <input type="checkbox" id="fPublic" aria-labelledby="fPublicLabel" ${settings.isPublic ? 'checked' : ''}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
                 <div class="toggle-row">
-                    <span class="toggle-label">إظهار شريط إنجاز الفصل</span>
+                    <span class="toggle-label" id="fShowClassLabel">إظهار شريط إنجاز الفصل</span>
                     <label class="toggle">
-                        <input type="checkbox" id="fShowClass" ${settings.showClassProgress ? 'checked' : ''}>
+                        <input type="checkbox" id="fShowClass" aria-labelledby="fShowClassLabel" ${settings.showClassProgress ? 'checked' : ''}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
                 <div class="form-group" style="margin-top:16px; margin-bottom:0;">
-                    <label class="form-label">السورة الحالية للفصل</label>
+                    <label class="form-label" for="fCurrentSurah">السورة الحالية للفصل</label>
                     <select class="form-select" id="fCurrentSurah">
                         <option value="">تلقائي (يُحسب حسب تقدم الطلاب)</option>
                         ${SURAHS.map(s => `<option value="${s.n}" ${settings.classCurrentSurah === s.n ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}
@@ -111,7 +111,10 @@ export default async function BoardSettingsPage(container, { params, navigate })
     container.querySelectorAll('[data-dir]').forEach(btn => {
         btn.addEventListener('click', () => {
             direction = btn.dataset.dir;
-            container.querySelectorAll('[data-dir]').forEach(b => b.classList.toggle('active', b === btn));
+            container.querySelectorAll('[data-dir]').forEach(b => {
+                b.classList.toggle('active', b === btn);
+                b.setAttribute('aria-pressed', String(b === btn));
+            });
         });
     });
 

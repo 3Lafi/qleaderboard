@@ -5,7 +5,7 @@ import { escapeHtml } from './ui.js';
 // وضع اختيار السور المخصصة (114 شريحة برقم السورة)
 export function renderSurahChipGrid({ selected = new Set(), onToggle }) {
     const html = SURAHS.map(s => `
-        <button type="button" class="chip ${selected.has(s.n) ? 'chip-selected' : ''}" data-n="${s.n}">
+        <button type="button" class="chip ${selected.has(s.n) ? 'chip-selected' : ''}" data-n="${s.n}" aria-pressed="${selected.has(s.n)}">
             <span>${escapeHtml(s.name)}</span>
             <span class="chip-ayahs">${s.ayahs} آية</span>
         </button>`).join('');
@@ -18,6 +18,7 @@ export function renderSurahChipGrid({ selected = new Set(), onToggle }) {
             const n = Number(chip.dataset.n);
             const nowSelected = !chip.classList.contains('chip-selected');
             chip.classList.toggle('chip-selected', nowSelected);
+            chip.setAttribute('aria-pressed', String(nowSelected));
             onToggle(n, nowSelected);
         });
     });
@@ -31,7 +32,7 @@ export function renderJuzChipGrid({ selected = new Set(), onToggle }) {
         const count = hasSurahs ? surahsInJuz(j).length : 0;
         return `
             <button type="button" class="chip ${selected.has(j) ? 'chip-selected' : ''} ${hasSurahs ? '' : 'chip-disabled'}"
-                data-j="${j}" ${hasSurahs ? '' : 'disabled title="لا تبدأ فيه سورة كاملة"'}>
+                data-j="${j}" aria-pressed="${selected.has(j)}" ${hasSurahs ? '' : 'disabled title="لا تبدأ فيه سورة كاملة"'}>
                 <span>الجزء ${j}</span>
                 <span class="chip-ayahs">${hasSurahs ? count + ' سورة' : '—'}</span>
             </button>`;
@@ -45,6 +46,7 @@ export function renderJuzChipGrid({ selected = new Set(), onToggle }) {
             const j = Number(chip.dataset.j);
             const nowSelected = !chip.classList.contains('chip-selected');
             chip.classList.toggle('chip-selected', nowSelected);
+            chip.setAttribute('aria-pressed', String(nowSelected));
             onToggle(j, nowSelected);
         });
     });
@@ -56,7 +58,7 @@ export function renderMemorizationChipGrid({ orderedSurahs, memorizedSet, onTogg
     const wrap = document.createElement('div');
     wrap.className = 'chip-grid';
     wrap.innerHTML = orderedSurahs.map(n => `
-        <button type="button" class="chip ${memorizedSet.has(n) ? 'chip-memorized' : ''}" data-n="${n}" ${disabled ? 'disabled' : ''}>
+        <button type="button" class="chip ${memorizedSet.has(n) ? 'chip-memorized' : ''}" data-n="${n}" aria-pressed="${memorizedSet.has(n)}" ${disabled ? 'disabled' : ''}>
             <span>${escapeHtml(SURAHS[n - 1].name)}</span>
             <span class="chip-ayahs">${surahAyahs(n)} آية</span>
         </button>`).join('');
@@ -66,11 +68,13 @@ export function renderMemorizationChipGrid({ orderedSurahs, memorizedSet, onTogg
             const n = Number(chip.dataset.n);
             const nowMemorized = !chip.classList.contains('chip-memorized');
             chip.classList.toggle('chip-memorized', nowMemorized);
+            chip.setAttribute('aria-pressed', String(nowMemorized));
             chip.disabled = true;
             try {
                 await onToggle(n, nowMemorized);
             } catch (err) {
                 chip.classList.toggle('chip-memorized', !nowMemorized);
+                chip.setAttribute('aria-pressed', String(!nowMemorized));
                 throw err;
             } finally {
                 chip.disabled = false;

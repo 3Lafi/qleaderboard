@@ -21,6 +21,8 @@ export function toast(message, type = 'info') {
     if (!host) {
         host = document.createElement('div');
         host.id = 'toastHost';
+        host.setAttribute('role', 'status');
+        host.setAttribute('aria-live', 'polite');
         document.body.appendChild(host);
     }
     const item = document.createElement('div');
@@ -39,11 +41,12 @@ export function toast(message, type = 'info') {
 // حوار تأكيد يعيد Promise<boolean>؛ requireText يطلب كتابة نص مطابق قبل التفعيل (للحذف الخطير)
 export function confirmDialog({ title, message, confirmText = 'تأكيد', cancelText = 'إلغاء', danger = false, requireText = null }) {
     return new Promise(resolve => {
+        const previouslyFocused = document.activeElement;
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
-            <div class="modal-card" role="dialog" aria-modal="true">
-                <h3 class="modal-title">${escapeHtml(title)}</h3>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                <h3 class="modal-title" id="modalTitle">${escapeHtml(title)}</h3>
                 <p class="modal-message">${escapeHtml(message)}</p>
                 ${requireText ? `
                     <p class="modal-hint">اكتب "<b>${escapeHtml(requireText)}</b>" للتأكيد:</p>
@@ -57,20 +60,28 @@ export function confirmDialog({ title, message, confirmText = 'تأكيد', canc
         document.body.appendChild(overlay);
 
         const confirmBtn = overlay.querySelector('#modalConfirmBtn');
+        const cancelBtn = overlay.querySelector('#modalCancelBtn');
         const input = overlay.querySelector('#modalConfirmInput');
         if (input) {
             input.addEventListener('input', () => {
                 confirmBtn.disabled = input.value.trim() !== requireText;
             });
             input.focus();
+        } else {
+            // تفادي التنفيذ العرضي لإجراء خطير عند الضغط على Enter دون قصد
+            (danger ? cancelBtn : confirmBtn).focus();
         }
 
         const close = result => {
             overlay.remove();
+            document.removeEventListener('keydown', onKeydown);
+            if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
             resolve(result);
         };
+        const onKeydown = e => { if (e.key === 'Escape') close(false); };
+        document.addEventListener('keydown', onKeydown);
         confirmBtn.addEventListener('click', () => close(true));
-        overlay.querySelector('#modalCancelBtn').addEventListener('click', () => close(false));
+        cancelBtn.addEventListener('click', () => close(false));
         overlay.addEventListener('click', e => { if (e.target === overlay) close(false); });
     });
 }
@@ -78,11 +89,12 @@ export function confirmDialog({ title, message, confirmText = 'تأكيد', canc
 // حوار إدخال نص بسيط (مثل إعادة تسمية طالب)
 export function promptDialog({ title, label, value = '', confirmText = 'حفظ' }) {
     return new Promise(resolve => {
+        const previouslyFocused = document.activeElement;
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `
-            <div class="modal-card" role="dialog" aria-modal="true">
-                <h3 class="modal-title">${escapeHtml(title)}</h3>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+                <h3 class="modal-title" id="modalTitle">${escapeHtml(title)}</h3>
                 ${label ? `<p class="modal-message">${escapeHtml(label)}</p>` : ''}
                 <input type="text" class="form-input" id="modalPromptInput" value="${escapeHtml(value)}">
                 <div class="modal-actions">
@@ -98,8 +110,12 @@ export function promptDialog({ title, label, value = '', confirmText = 'حفظ' 
 
         const close = result => {
             overlay.remove();
+            document.removeEventListener('keydown', onKeydown);
+            if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
             resolve(result);
         };
+        const onKeydown = e => { if (e.key === 'Escape') close(null); };
+        document.addEventListener('keydown', onKeydown);
         const submit = () => {
             const text = input.value.trim();
             if (text) close(text);

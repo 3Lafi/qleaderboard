@@ -39,7 +39,7 @@ export function renderStudentCard(student, rank) {
             <span class="surah-count-badge">${student.formattedSurahsCount}</span>
             <span class="percentage-badge">${student.progressPercentage}%</span>
         </div>
-        <button id="${btnId}" class="details-btn">عرض السور</button>
+        <button id="${btnId}" class="details-btn" aria-expanded="false" aria-controls="${detailsId}">عرض السور</button>
         <div id="${detailsId}" class="surahs-list">${surahsHtml}</div>
     `;
 
@@ -49,6 +49,7 @@ export function renderStudentCard(student, rank) {
         const isOpen = details.style.display === 'block';
         details.style.display = isOpen ? 'none' : 'block';
         btn.textContent = isOpen ? 'عرض السور' : 'إخفاء السور';
+        btn.setAttribute('aria-expanded', String(!isOpen));
     });
 
     requestAnimationFrame(() => {

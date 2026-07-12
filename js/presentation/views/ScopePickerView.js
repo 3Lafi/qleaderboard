@@ -23,11 +23,11 @@ export function mountScopePicker(hostEl, initialScope, onChange = () => {}) {
 
     hostEl.innerHTML = `
         <label class="form-label">نطاق الحفظ</label>
-        <div class="seg-tabs" id="scopeTabs">
-            <button type="button" class="seg-tab ${scopeType === 'quran' ? 'active' : ''}" data-scope="quran">القرآن كاملاً</button>
-            <button type="button" class="seg-tab ${scopeType === 'juz' ? 'active' : ''}" data-scope="juz">أجزاء</button>
-            <button type="button" class="seg-tab ${scopeType === 'custom' ? 'active' : ''}" data-scope="custom">تحديد سور</button>
-            <button type="button" class="seg-tab ${scopeType === 'curriculum' ? 'active' : ''}" data-scope="curriculum">حسب المنهج الرسمي</button>
+        <div class="seg-tabs" id="scopeTabs" role="group" aria-label="نطاق الحفظ">
+            <button type="button" class="seg-tab ${scopeType === 'quran' ? 'active' : ''}" data-scope="quran" aria-pressed="${scopeType === 'quran'}">القرآن كاملاً</button>
+            <button type="button" class="seg-tab ${scopeType === 'juz' ? 'active' : ''}" data-scope="juz" aria-pressed="${scopeType === 'juz'}">أجزاء</button>
+            <button type="button" class="seg-tab ${scopeType === 'custom' ? 'active' : ''}" data-scope="custom" aria-pressed="${scopeType === 'custom'}">تحديد سور</button>
+            <button type="button" class="seg-tab ${scopeType === 'curriculum' ? 'active' : ''}" data-scope="curriculum" aria-pressed="${scopeType === 'curriculum'}">حسب المنهج الرسمي</button>
         </div>
         <div id="scopePanelQuran" style="display:${scopeType === 'quran' ? 'block' : 'none'};">
             <p class="form-hint">سيشمل النطاق جميع سور القرآن الكريم الـ 114 (6236 آية).</p>
@@ -36,11 +36,11 @@ export function mountScopePicker(hostEl, initialScope, onChange = () => {}) {
         <div id="scopePanelCustom" style="display:${scopeType === 'custom' ? 'block' : 'none'};">
             <div class="range-row">
                 <div class="form-group">
-                    <label class="form-label">من سورة</label>
+                    <label class="form-label" for="rangeFrom">من سورة</label>
                     <select class="form-select" id="rangeFrom">${SURAHS.map(s => `<option value="${s.n}">${escapeHtml(s.name)}</option>`).join('')}</select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">إلى سورة</label>
+                    <label class="form-label" for="rangeTo">إلى سورة</label>
                     <select class="form-select" id="rangeTo">${SURAHS.map(s => `<option value="${s.n}">${escapeHtml(s.name)}</option>`).join('')}</select>
                 </div>
                 <button type="button" class="btn btn-secondary" id="applyRangeBtn">تحديد النطاق</button>
@@ -103,26 +103,26 @@ export function mountScopePicker(hostEl, initialScope, onChange = () => {}) {
             ${hint}
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">الدولة / المنهج</label>
+                    <label class="form-label" for="curCountry">الدولة / المنهج</label>
                     <select class="form-select" id="curCountry">${CURRICULUM_COUNTRIES.map(c => `<option value="${c.id}" ${c.id === curriculumSel.countryId ? 'selected' : ''}>${escapeHtml(c.manhagName)}</option>`).join('')}</select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">النظام التعليمي</label>
+                    <label class="form-label" for="curSystem">النظام التعليمي</label>
                     <select class="form-select" id="curSystem">${systems.map(s => `<option value="${s.systemId}" ${s.systemId === curriculumSel.systemId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label">المرحلة</label>
+                    <label class="form-label" for="curStage">المرحلة</label>
                     <select class="form-select" id="curStage">${stages.map(s => `<option value="${s.stageId}" ${s.stageId === curriculumSel.stageId ? 'selected' : ''}>${escapeHtml(s.name)}</option>`).join('')}</select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">الصف / المستوى</label>
+                    <label class="form-label" for="curLevel">الصف / المستوى</label>
                     <select class="form-select" id="curLevel">${levels.map(l => `<option value="${l.levelId}" ${l.levelId === curriculumSel.levelId ? 'selected' : ''}>${escapeHtml(l.name)}</option>`).join('')}</select>
                 </div>
             </div>
             <div class="form-group">
-                <label class="form-label">الفصل الدراسي</label>
+                <label class="form-label" for="curTerm">الفصل الدراسي</label>
                 <select class="form-select" id="curTerm">
                     <option value="" ${curriculumSel.termId == null ? 'selected' : ''}>السنة الدراسية كاملة (كل الفصول)</option>
                     ${terms.map(t => `<option value="${t.termId}" ${t.termId === curriculumSel.termId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('')}
@@ -201,7 +201,10 @@ export function mountScopePicker(hostEl, initialScope, onChange = () => {}) {
         const btn = e.target.closest('.seg-tab');
         if (!btn) return;
         scopeType = btn.dataset.scope;
-        hostEl.querySelectorAll('#scopeTabs .seg-tab').forEach(t => t.classList.toggle('active', t === btn));
+        hostEl.querySelectorAll('#scopeTabs .seg-tab').forEach(t => {
+            t.classList.toggle('active', t === btn);
+            t.setAttribute('aria-pressed', String(t === btn));
+        });
         hostEl.querySelector('#scopePanelQuran').style.display = scopeType === 'quran' ? 'block' : 'none';
         hostEl.querySelector('#scopePanelJuz').style.display = scopeType === 'juz' ? 'block' : 'none';
         hostEl.querySelector('#scopePanelCustom').style.display = scopeType === 'custom' ? 'block' : 'none';

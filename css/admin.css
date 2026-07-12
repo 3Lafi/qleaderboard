@@ -219,7 +219,6 @@
     color: var(--text-main);
     background: #fff;
     transition: border-color 0.2s;
-    outline: none;
 }
 
 .form-input:focus, .form-select:focus {
