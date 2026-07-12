@@ -2,3 +2,5 @@ old/
 images/New folder/
 *.DS_Store
 Thumbs.db
+firebase-debug.log
+.firebase/

@@ -1,4 +1,4 @@
-// موجّه المسارات المعتمد على الهاش (#/...) — يعمل على GitHub Pages دون إعادة كتابة روابط
+// موجّه المسارات المعتمد على المسار الحقيقي (History API) — يتطلب إعادة كتابة ** إلى /index.html في الاستضافة
 import { authState } from './authState.js';
 
 const ID = '([A-Za-z0-9_-]+)';
@@ -17,15 +17,15 @@ let currentCleanup = null;
 let navToken = 0;
 
 export function currentPath() {
-    const hash = location.hash || '#/';
-    return hash.startsWith('#') ? hash.slice(1) : hash;
+    return location.pathname || '/';
 }
 
 export function navigate(path) {
-    if (currentPath() === path) {
+    if (location.pathname + location.search === path) {
         handleRoute();
     } else {
-        location.hash = '#' + path;
+        history.pushState(null, '', path);
+        handleRoute();
     }
 }
 
@@ -51,7 +51,7 @@ async function handleRoute() {
         currentCleanup = null;
     }
 
-    const matched = match(path.split('?')[0]);
+    const matched = match(path);
     if (!matched) {
         const { renderNotFound } = await import('../presentation/pages/NotFoundPage.js');
         if (token !== navToken) return;
@@ -70,7 +70,7 @@ async function handleRoute() {
         return;
     }
     if (route.guestOnly && user) {
-        navigate(hashQueryParam('next') || '/dashboard');
+        navigate(queryParam('next') || '/dashboard');
         return;
     }
 
@@ -95,15 +95,40 @@ async function handleRoute() {
     }
 }
 
-// استخراج قيمة من الجزء الاستعلامي داخل الهاش مثل #/login?next=/dashboard
-export function hashQueryParam(name) {
-    const path = currentPath();
-    const qIndex = path.indexOf('?');
-    if (qIndex === -1) return null;
-    return new URLSearchParams(path.slice(qIndex + 1)).get(name);
+// استخراج قيمة من الجزء الاستعلامي في المسار مثل /login?next=/dashboard
+export function queryParam(name) {
+    return new URLSearchParams(location.search).get(name);
+}
+
+// يعترض نقرات الروابط الداخلية ليتنقّل عبر History API بدل إعادة تحميل الصفحة بالكامل
+function interceptLinks() {
+    document.addEventListener('click', e => {
+        if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        const link = e.target.closest('a');
+        if (!link || link.target === '_blank' || link.hasAttribute('download') || !link.href) return;
+        let url;
+        try { url = new URL(link.href); } catch { return; }
+        if (url.origin !== location.origin) return;
+        e.preventDefault();
+        navigate(url.pathname + url.search);
+    });
+}
+
+// شريحة توافق: روابط قديمة بصيغة #/... (من نسخة الهاش الموزّعة سابقاً) تتحوّل إلى مسار حقيقي فوراً
+// يُستدعى عند الإقلاع (تحميل كامل) وعند hashchange (رابط قديم يُلصق في تبويب مفتوح بالفعل)
+function convertLegacyHash() {
+    if (!location.hash.startsWith('#/')) return false;
+    history.replaceState(null, '', location.hash.slice(1) || '/');
+    return true;
 }
 
 export function startRouter() {
-    window.addEventListener('hashchange', handleRoute);
+    convertLegacyHash();
+
+    window.addEventListener('popstate', handleRoute);
+    window.addEventListener('hashchange', () => {
+        if (convertLegacyHash()) handleRoute();
+    });
+    interceptLinks();
     handleRoute();
 }

@@ -9,7 +9,7 @@ import {
     updateProfile,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
 import { bannerHeader, toast } from '../views/ui.js';
-import { hashQueryParam } from '../../core/router.js';
+import { queryParam } from '../../core/router.js';
 
 const ERROR_MESSAGES = {
     'auth/invalid-email': 'البريد الإلكتروني غير صحيح.',
@@ -28,7 +28,7 @@ function friendlyError(err) {
 }
 
 export default function LoginPage(container, { navigate }) {
-    const next = hashQueryParam('next') || '/dashboard';
+    const next = queryParam('next') || '/dashboard';
     let mode = 'signin'; // signin | signup
 
     container.innerHTML = `

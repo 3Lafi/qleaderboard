@@ -129,17 +129,17 @@ export function topbar(active = '') {
     const displayName = user ? (user.displayName || user.email || '') : '';
     return `
         <nav class="topbar">
-            <a href="#/" class="topbar-brand">
+            <a href="/" class="topbar-brand">
                 <span class="topbar-icon"></span>
                 <span class="topbar-title">لوحات حفظ القرآن</span>
             </a>
             <div class="topbar-links">
                 ${user ? `
-                    <a href="#/dashboard" class="topbar-link ${active === 'dashboard' ? 'active' : ''}">لوحاتي</a>
+                    <a href="/dashboard" class="topbar-link ${active === 'dashboard' ? 'active' : ''}">لوحاتي</a>
                     <span class="account-chip" title="${escapeHtml(user.email || '')}">${escapeHtml(displayName)}</span>
                     <button class="topbar-link topbar-signout" id="topbarSignOut">خروج</button>
                 ` : `
-                    <a href="#/login" class="topbar-link ${active === 'login' ? 'active' : ''}">دخول المعلمين</a>
+                    <a href="/login" class="topbar-link ${active === 'login' ? 'active' : ''}">دخول المعلمين</a>
                 `}
             </div>
         </nav>`;
@@ -191,6 +191,5 @@ export function formatDate(date) {
 
 // رابط المشاركة العام للوحة
 export function boardShareUrl(boardId) {
-    const base = location.origin + location.pathname.replace(/[^/]*$/, '');
-    return `${base}index.html#/b/${boardId}`;
+    return `${location.origin}/b/${boardId}`;
 }

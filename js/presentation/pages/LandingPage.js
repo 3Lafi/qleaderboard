@@ -15,8 +15,8 @@ export default function LandingPage(container) {
 
         <div class="landing-cta">
             ${user
-                ? `<a href="#/dashboard" class="btn btn-primary btn-lg">لوحاتي</a>`
-                : `<a href="#/login" class="btn btn-primary btn-lg">دخول المعلمين</a>`}
+                ? `<a href="/dashboard" class="btn btn-primary btn-lg">لوحاتي</a>`
+                : `<a href="/login" class="btn btn-primary btn-lg">دخول المعلمين</a>`}
         </div>
 
         <main class="portal-grid">

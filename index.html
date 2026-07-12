@@ -8,20 +8,20 @@
 
     <meta property="og:title" content="وسام — لوحات متابعة حفظ القرآن الكريم">
     <meta property="og:description" content="منصة تفاعلية للمعلمين لإنشاء لوحات متابعة حفظ القرآن الكريم ومشاركتها مع الطلاب وأولياء الأمور.">
-    <meta property="og:url" content="https://3lafi.github.io/Wisam/">
-    <meta property="og:image" itemprop="image" content="https://3lafi.github.io/Wisam/images/og-portal.jpg">
+    <meta property="og:url" content="https://wisam.web.app/">
+    <meta property="og:image" itemprop="image" content="https://wisam.web.app/images/og-portal.jpg">
     <meta property="og:image:type" content="image/jpeg">
     <meta property="og:image:width" content="1200">
     <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
 
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#0f6246">
-    <link rel="icon" type="image/png" href="images/quran-icon.png">
-    <link rel="apple-touch-icon" href="images/quran-icon.png">
-    <link href="css/main.css" rel="stylesheet">
-    <link href="css/components.css" rel="stylesheet">
-    <link href="css/admin.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="/images/quran-icon.png">
+    <link rel="apple-touch-icon" href="/images/quran-icon.png">
+    <link href="/css/main.css" rel="stylesheet">
+    <link href="/css/components.css" rel="stylesheet">
+    <link href="/css/admin.css" rel="stylesheet">
 </head>
 
 <body>
@@ -38,11 +38,11 @@
         <p style="text-align:center; font-weight:bold;">هذا التطبيق يتطلب تفعيل JavaScript في المتصفح.</p>
     </noscript>
 
-    <script type="module" src="js/app.js"></script>
+    <script type="module" src="/js/app.js"></script>
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(err => console.log('SW failed: ', err));
+                navigator.serviceWorker.register('/sw.js').catch(err => console.log('SW failed: ', err));
             });
         }
     </script>

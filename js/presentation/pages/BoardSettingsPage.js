@@ -134,7 +134,7 @@ export default async function BoardSettingsPage(container, { params, navigate })
 
             <div style="display:flex; gap:10px;">
                 <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">${isEdit ? 'حفظ التغييرات' : 'إنشاء اللوحة'}</button>
-                <a href="#/dashboard" class="btn btn-secondary btn-lg">إلغاء</a>
+                <a href="/dashboard" class="btn btn-secondary btn-lg">إلغاء</a>
             </div>
         </form>
 

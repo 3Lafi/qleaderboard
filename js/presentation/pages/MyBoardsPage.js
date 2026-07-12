@@ -14,7 +14,7 @@ export default async function MyBoardsPage(container, { navigate }) {
                 <p class="page-subtitle">مرحباً ${escapeHtml(user.displayName || user.email || '')}</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <a href="#/new" class="btn btn-primary">＋ لوحة جديدة</a>
+                <a href="/new" class="btn btn-primary">＋ لوحة جديدة</a>
             </div>
         </div>
         <div id="boardsHost">${skeletonBoards()}</div>
@@ -37,7 +37,7 @@ export default async function MyBoardsPage(container, { navigate }) {
             <div class="empty-state">
                 <div class="empty-state-emoji">📋</div>
                 <p class="empty-state-text">لا توجد لديك لوحات بعد.</p>
-                <a href="#/new" class="btn btn-primary">إنشاء أول لوحة</a>
+                <a href="/new" class="btn btn-primary">إنشاء أول لوحة</a>
             </div>`;
         return;
     }
@@ -86,9 +86,9 @@ function boardCardHtml(board) {
                 <span>👤 ${board.studentsCount()} طالب</span>
             </div>
             <div class="board-actions">
-                <a href="#/b/${board.id}" class="btn btn-secondary btn-sm">عرض</a>
-                <a href="#/edit/${board.id}/students" class="btn btn-secondary btn-sm">الطلاب</a>
-                <a href="#/edit/${board.id}" class="btn btn-secondary btn-sm">الإعدادات</a>
+                <a href="/b/${board.id}" class="btn btn-secondary btn-sm">عرض</a>
+                <a href="/edit/${board.id}/students" class="btn btn-secondary btn-sm">الطلاب</a>
+                <a href="/edit/${board.id}" class="btn btn-secondary btn-sm">الإعدادات</a>
                 <button class="btn btn-primary btn-sm" data-copy="${board.id}">نسخ الرابط</button>
                 <button class="btn btn-danger btn-sm" data-delete="${board.id}" data-name="${escapeHtml(s.name)}">حذف</button>
             </div>

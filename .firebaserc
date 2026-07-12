@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "wisam-3lafi"
-  }
+  },
+  "targets": {
+    "wisam-3lafi": {
+      "hosting": {
+        "wisam": [
+          "wisam"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }

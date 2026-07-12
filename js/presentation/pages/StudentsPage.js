@@ -30,8 +30,8 @@ export default async function StudentsPage(container, { params }) {
                 <p class="page-subtitle">إدارة الطلاب وتسجيل الحفظ</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <a href="#/edit/${boardId}" class="btn btn-secondary">الإعدادات</a>
-                <a href="#/b/${boardId}" class="btn btn-secondary">عرض اللوحة العامة</a>
+                <a href="/edit/${boardId}" class="btn btn-secondary">الإعدادات</a>
+                <a href="/b/${boardId}" class="btn btn-secondary">عرض اللوحة العامة</a>
             </div>
         </div>
 

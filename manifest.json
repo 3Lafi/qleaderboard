@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#0a4d36",
   "theme_color": "#0f6246",
-  "start_url": "/Wisam/index.html",
+  "start_url": "/",
   "icons": [
     {
       "src": "./images/quran-icon.png",
