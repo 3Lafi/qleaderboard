@@ -11,7 +11,6 @@ const routes = [
     { pattern: new RegExp('^/new$'), page: 'BoardSettingsPage', auth: true },
     { pattern: new RegExp(`^/edit/${ID}$`), page: 'BoardSettingsPage', auth: true, params: ['boardId'] },
     { pattern: new RegExp(`^/edit/${ID}/students$`), page: 'StudentsPage', auth: true, params: ['boardId'] },
-    { pattern: new RegExp('^/import$'), page: 'ImportPage', auth: true },
 ];
 
 let currentCleanup = null;

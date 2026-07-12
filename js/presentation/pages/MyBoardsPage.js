@@ -14,7 +14,6 @@ export default async function MyBoardsPage(container, { navigate }) {
                 <p class="page-subtitle">مرحباً ${escapeHtml(user.displayName || user.email || '')}</p>
             </div>
             <div style="display:flex; gap:10px;">
-                <a href="#/import" class="btn btn-secondary">استيراد من Google Sheets</a>
                 <a href="#/new" class="btn btn-primary">＋ لوحة جديدة</a>
             </div>
         </div>
