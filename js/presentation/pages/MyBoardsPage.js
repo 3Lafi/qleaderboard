@@ -43,8 +43,6 @@ export default async function MyBoardsPage(container, { navigate }) {
         return;
     }
 
-    boards.sort((a, b) => (b.updatedAt?.toMillis?.() || 0) - (a.updatedAt?.toMillis?.() || 0));
-
     host.innerHTML = `<div class="boards-grid">${boards.map(boardCardHtml).join('')}</div>`;
 
     host.querySelectorAll('[data-copy]').forEach(btn => {

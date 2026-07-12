@@ -6,6 +6,10 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == resource.data.ownerUid;
     }
 
+    function isValidBoardName(name) {
+      return name is string && name.size() > 0 && name.size() <= 100;
+    }
+
     match /leaderboards/{boardId} {
       // أي شخص لديه الرابط يمكنه القراءة إذا كانت اللوحة عامة؛ المالك يقرأ دائماً
       allow get: if (resource.data.settings.isPublic == true) ||
@@ -17,12 +21,22 @@ service cloud.firestore {
 
       allow create: if request.auth != null
                     && request.resource.data.ownerUid == request.auth.uid
-                    && request.resource.data.settings.name is string
-                    && request.resource.data.settings.name.size() > 0
-                    && request.resource.data.settings.name.size() < 200;
+                    && isValidBoardName(request.resource.data.settings.name)
+                    && request.resource.data.settings.isPublic is bool
+                    && request.resource.data.students == {}
+                    && request.resource.data.createdAt == request.time;
 
+      // ملاحظة: لا يمكن التحقق من شكل كل عنصر داخل خريطة students هنا — لغة قواعد
+      // Firestore لا توفر تكراراً (forEach/all) على عناصر خريطة بمفاتيح غير معروفة مسبقاً.
+      // التحقق الكامل من الشكل يحدث في طبقة العميل (BoardSettings.sanitizeSettings)؛
+      // إن احتجنا ضماناً على مستوى القواعد مستقبلاً فالحل هو نقل الطلاب إلى subcollection
+      // حيث يكون لكل طالب مستند خاص به قابل للتحقق بشكل مستقل.
       allow update: if isOwner()
-                    && request.resource.data.ownerUid == resource.data.ownerUid;
+                    && request.resource.data.ownerUid == resource.data.ownerUid
+                    && request.resource.data.createdAt == resource.data.createdAt
+                    && isValidBoardName(request.resource.data.settings.name)
+                    && request.resource.data.settings.isPublic is bool
+                    && request.resource.data.students.size() <= 150;
 
       allow delete: if isOwner();
     }

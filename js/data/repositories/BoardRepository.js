@@ -2,7 +2,7 @@
 import { db } from '../../core/firebase.js';
 import {
     collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField,
-    query, where, onSnapshot, serverTimestamp, arrayUnion, arrayRemove,
+    query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove,
 } from '../../core/firebase-sdk.js';
 import { Leaderboard } from '../../domain/models/Leaderboard.js';
 import { sanitizeSettings } from '../../domain/models/BoardSettings.js';
@@ -27,7 +27,7 @@ function randomId(len = 8) {
 
 export const BoardRepository = {
     async listMine(uid) {
-        const q = query(boardsCol(), where('ownerUid', '==', uid));
+        const q = query(boardsCol(), where('ownerUid', '==', uid), orderBy('updatedAt', 'desc'));
         const snap = await getDocs(q);
         return snap.docs.map(d => new Leaderboard(d.id, d.data()));
     },

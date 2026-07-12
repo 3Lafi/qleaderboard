@@ -27,6 +27,7 @@ export {
     deleteField,
     query,
     where,
+    orderBy,
     onSnapshot,
     serverTimestamp,
     arrayUnion,

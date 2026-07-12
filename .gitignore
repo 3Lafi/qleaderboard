@@ -4,3 +4,5 @@ images/New folder/
 Thumbs.db
 firebase-debug.log
 .firebase/
+node_modules/
+firestore-debug.log
