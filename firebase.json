@@ -14,9 +14,16 @@
     "ignore": [
       "firebase.json",
       "firestore.rules",
+      "firestore.indexes.json",
       "README.md",
+      "package.json",
+      "package-lock.json",
       "**/.*",
-      "**/node_modules/**"
+      "**/node_modules/**",
+      "scripts/**",
+      "tests/**",
+      "docs/**",
+      "tools/**"
     ],
     "cleanUrls": true,
     "trailingSlash": false,
@@ -43,6 +50,12 @@
         "source": "**/*.@(js|css|png|jpg|jpeg|svg|webp|woff|woff2)",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=3600" }
+        ]
+      },
+      {
+        "source": "images/og/*.jpg",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=604800, immutable" }
         ]
       }
     ]

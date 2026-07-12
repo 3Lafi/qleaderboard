@@ -9,6 +9,7 @@
 // على خريطة بمفاتيح غير معروفة مسبقاً، انظر firestore.rules) لكنه يرفع تكلفة القراءة
 // إلى N+1 لكل لوحة بدل قراءة واحدة.
 import { expandScope, ayahsInScope } from '../../core/quran-data.js';
+import { DEFAULT_THEME_ID } from '../../core/banner-themes.js';
 
 export class Leaderboard {
     constructor(id, data) {
@@ -20,6 +21,7 @@ export class Leaderboard {
             name: data.settings?.name || '',
             schoolName: data.settings?.schoolName || '',
             classLabel: data.settings?.classLabel || '',
+            banner: { themeId: data.settings?.banner?.themeId || DEFAULT_THEME_ID },
             scope: data.settings?.scope || { type: 'quran', surahNumbers: expandScope({ type: 'quran' }) },
             direction: data.settings?.direction || 'reverse',
             isPublic: data.settings?.isPublic !== false,

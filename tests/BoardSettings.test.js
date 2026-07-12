@@ -43,3 +43,14 @@ test('sanitizeSettings coerces isPublic/showClassProgress to booleans', () => {
     assert.equal(s.isPublic, true);
     assert.equal(s.showClassProgress, false);
 });
+
+test('sanitizeSettings keeps a known banner theme and falls back to emerald otherwise', () => {
+    const base = { name: 'ل', scope: { surahNumbers: [1] } };
+    assert.equal(sanitizeSettings({ ...base, banner: { themeId: 'midnight' } }).banner.themeId, 'midnight');
+    assert.equal(sanitizeSettings({ ...base, banner: { themeId: 'not-a-theme' } }).banner.themeId, 'emerald');
+    assert.equal(sanitizeSettings(base).banner.themeId, 'emerald');
+});
+
+test('defaultSettings includes the default banner theme', () => {
+    assert.equal(defaultSettings().banner.themeId, 'emerald');
+});

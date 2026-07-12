@@ -5,6 +5,7 @@ import { rankStudents } from '../../domain/usecases/RankStudents.js';
 import { bannerHeader, copyToClipboard, boardShareUrl, skeletonCards, toast } from '../views/ui.js';
 import { renderStudentCard } from '../views/StudentCardView.js';
 import { renderClassProgress } from '../views/ClassProgressView.js';
+import { bannerTheme } from '../../core/banner-themes.js';
 
 export default function BoardPage(container, { params }) {
     const boardId = params.boardId;
@@ -58,6 +59,9 @@ export default function BoardPage(container, { params }) {
         document.title = `${board.settings.name} — لوحة حفظ القرآن`;
 
         const header = container.querySelector('header');
+        const theme = bannerTheme(board.settings.banner?.themeId);
+        header.style.setProperty('--banner-gradient', theme.gradient);
+        header.style.setProperty('--banner-shadow', theme.shadow);
         header.querySelector('.banner-title').textContent = board.settings.name || 'لوحة حفظ القرآن';
         let subtitleEl = header.querySelector('.banner-subtitle');
         const subtitleText = [board.settings.schoolName, board.settings.classLabel].filter(Boolean).join(' — ');

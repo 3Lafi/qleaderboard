@@ -74,9 +74,10 @@ header {
     width: 100%;
     min-height: 400px; /* Adjusted for Quran icon + text + Progress */
     margin-bottom: 40px;
-    background: linear-gradient(145deg, #168a5c 0%, #0a4d36 100%);
-    border-radius: 28px; 
-    box-shadow: 0 25px 60px rgba(7, 64, 46, 0.2);
+    /* المتغيّران يُضبطان لكل لوحة حسب سمة البانر المختارة (banner-themes.js)؛ الافتراضي الزمردي */
+    background: var(--banner-gradient, linear-gradient(145deg, #168a5c 0%, #0a4d36 100%));
+    border-radius: 28px;
+    box-shadow: 0 25px 60px var(--banner-shadow, rgba(7, 64, 46, 0.2));
     display: flex;
     flex-direction: column;
     justify-content: center;

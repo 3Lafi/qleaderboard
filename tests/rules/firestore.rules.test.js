@@ -26,7 +26,7 @@ function validBoardData(overrides = {}) {
         ownerUid: OWNER_UID,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
-        settings: { name: 'لوحة اختبار', isPublic: false },
+        settings: { name: 'لوحة اختبار', isPublic: false, banner: { themeId: 'emerald' } },
         students: {},
         ...overrides,
     };
@@ -99,7 +99,18 @@ test('create: an authenticated user can create a valid board they own', async ()
         ownerUid: OWNER_UID,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        settings: { name: 'لوحة جديدة', isPublic: true },
+        settings: { name: 'لوحة جديدة', isPublic: true, banner: { themeId: 'sapphire' } },
+        students: {},
+    }));
+});
+
+test('create: rejected without a banner theme', async () => {
+    const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
+    await assertFails(setDoc(doc(ownerDb, 'leaderboards', 'c6'), {
+        ownerUid: OWNER_UID,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        settings: { name: 'بلا بانر', isPublic: true },
         students: {},
     }));
 });
@@ -151,6 +162,28 @@ test('update: createdAt cannot be changed', async () => {
     await seedBoard('u4', validBoardData());
     const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
     await assertFails(updateDoc(doc(ownerDb, 'leaderboards', 'u4'), { createdAt: Timestamp.now() }));
+});
+
+test('update: banner cannot be changed once set', async () => {
+    await seedBoard('u7', validBoardData());
+    const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
+    await assertFails(updateDoc(doc(ownerDb, 'leaderboards', 'u7'), {
+        'settings.banner': { themeId: 'midnight' },
+    }));
+});
+
+test('update: a legacy board without a banner may add one exactly once', async () => {
+    await seedBoard('u8', validBoardData({
+        settings: { name: 'لوحة قديمة', isPublic: true }, // بلا banner — أنشئت قبل الميزة
+    }));
+    const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
+    await assertSucceeds(updateDoc(doc(ownerDb, 'leaderboards', 'u8'), {
+        'settings.banner': { themeId: 'emerald' },
+    }));
+    // بعد التثبيت الأول تُقفل
+    await assertFails(updateDoc(doc(ownerDb, 'leaderboards', 'u8'), {
+        'settings.banner': { themeId: 'amber' },
+    }));
 });
 
 test('update: rejected when students would exceed the 150 cap', async () => {

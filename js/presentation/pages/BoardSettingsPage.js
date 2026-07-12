@@ -5,6 +5,7 @@ import { defaultSettings, sanitizeSettings } from '../../domain/models/BoardSett
 import { SURAHS } from '../../core/quran-data.js';
 import { topbar, bindTopbar, toast, confirmDialog, escapeHtml } from '../views/ui.js';
 import { mountScopePicker } from '../views/ScopePickerView.js';
+import { mountBannerDesigner } from '../views/BannerDesignerView.js';
 
 export default async function BoardSettingsPage(container, { params, navigate }) {
     const user = authState.user();
@@ -52,6 +53,8 @@ export default async function BoardSettingsPage(container, { params, navigate })
                     </div>
                 </div>
             </div>
+
+            ${isEdit ? '' : '<div class="form-card" id="bannerCardHost"></div>'}
 
             <div class="form-card" id="scopeCardHost"></div>
 
@@ -107,6 +110,19 @@ export default async function BoardSettingsPage(container, { params, navigate })
 
     const scopePicker = mountScopePicker(container.querySelector('#scopeCardHost'), settings.scope);
 
+    // التصميم يُختار عند الإنشاء فقط — في التعديل يمرَّر banner المحفوظ كما هو (القواعد تمنع تغييره)
+    let bannerDesigner = null;
+    if (!isEdit) {
+        bannerDesigner = mountBannerDesigner(container.querySelector('#bannerCardHost'), () => ({
+            name: container.querySelector('#fName').value,
+            schoolName: container.querySelector('#fSchool').value,
+            classLabel: container.querySelector('#fClass').value,
+        }));
+        ['#fName', '#fSchool', '#fClass'].forEach(sel => {
+            container.querySelector(sel).addEventListener('input', bannerDesigner.refreshPreview);
+        });
+    }
+
     let direction = settings.direction !== 'forward' ? 'reverse' : 'forward';
     container.querySelectorAll('[data-dir]').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -149,6 +165,7 @@ export default async function BoardSettingsPage(container, { params, navigate })
                 name: container.querySelector('#fName').value,
                 schoolName: container.querySelector('#fSchool').value,
                 classLabel: container.querySelector('#fClass').value,
+                banner: isEdit ? settings.banner : { themeId: bannerDesigner.getThemeId() },
                 scope: scopePicker.getScope(),
                 direction,
                 isPublic: container.querySelector('#fPublic').checked,

@@ -23,6 +23,7 @@ service cloud.firestore {
                     && request.resource.data.ownerUid == request.auth.uid
                     && isValidBoardName(request.resource.data.settings.name)
                     && request.resource.data.settings.isPublic is bool
+                    && request.resource.data.settings.banner.themeId is string
                     && request.resource.data.students == {}
                     && request.resource.data.createdAt == request.time;
 
@@ -31,11 +32,16 @@ service cloud.firestore {
       // التحقق الكامل من الشكل يحدث في طبقة العميل (BoardSettings.sanitizeSettings)؛
       // إن احتجنا ضماناً على مستوى القواعد مستقبلاً فالحل هو نقل الطلاب إلى subcollection
       // حيث يكون لكل طالب مستند خاص به قابل للتحقق بشكل مستقل.
+      // تصميم البانر يُختار مرة واحدة: بعد حفظه لا يمكن تغييره أبداً.
+      // اللوحات القديمة (قبل الميزة، بلا banner) يُسمح لها بإضافته مرة واحدة فقط
+      // — أول تحديث يثبّت السمة الافتراضية ثم يُقفل.
       allow update: if isOwner()
                     && request.resource.data.ownerUid == resource.data.ownerUid
                     && request.resource.data.createdAt == resource.data.createdAt
                     && isValidBoardName(request.resource.data.settings.name)
                     && request.resource.data.settings.isPublic is bool
+                    && (!('banner' in resource.data.settings)
+                        || request.resource.data.settings.banner == resource.data.settings.banner)
                     && request.resource.data.students.size() <= 150;
 
       allow delete: if isOwner();

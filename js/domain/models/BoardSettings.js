@@ -1,12 +1,14 @@
 // نموذج إعدادات اللوحة: القيم الافتراضية والتحقق من الصحة قبل الحفظ
 import { LIMITS } from '../../core/config.js';
 import { expandScope } from '../../core/quran-data.js';
+import { DEFAULT_THEME_ID, isBannerThemeId } from '../../core/banner-themes.js';
 
 export function defaultSettings() {
     return {
         name: '',
         schoolName: '',
         classLabel: '',
+        banner: { themeId: DEFAULT_THEME_ID },
         scope: { type: 'quran', juzNumbers: [], curriculum: null, surahNumbers: expandScope({ type: 'quran' }) },
         direction: 'reverse',
         isPublic: true,
@@ -28,6 +30,7 @@ export function sanitizeSettings(input) {
         name,
         schoolName: String(input?.schoolName || '').trim().slice(0, 150),
         classLabel: String(input?.classLabel || '').trim().slice(0, 100),
+        banner: { themeId: isBannerThemeId(input?.banner?.themeId) ? input.banner.themeId : DEFAULT_THEME_ID },
         scope: {
             type: input?.scope?.type || 'quran',
             juzNumbers: Array.isArray(input?.scope?.juzNumbers) ? input.scope.juzNumbers : [],

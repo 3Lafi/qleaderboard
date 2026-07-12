@@ -1,0 +1,75 @@
+# يولّد صور معاينة الرابط (WhatsApp/OG) للوحات العامة وينشرها إلى Firebase Hosting.
+# انظر scripts/generate-og-previews.mjs لتفاصيل المنطق.
+#
+# يتطلب سرّ مستودع واحداً: FIREBASE_SERVICE_ACCOUNT — مفتاح JSON لحساب خدمة له دورا
+# Cloud Datastore Viewer (قراءة اللوحات) و Firebase Hosting Admin (النشر).
+#
+# المستودع خاص، لذا دقائق Actions محدودة: مسار سريع يفحص أولاً دون متصفح، ولا يثبّت
+# Chromium وينشر إلا عند وجود عمل فعلي. عدّل الجدولة أدناه لموازنة السرعة مع الدقائق.
+name: OG previews
+
+on:
+  schedule:
+    - cron: '17 * * * *' # كل ساعة (دقيقة 17 لتفادي ازدحام رأس الساعة)
+  workflow_dispatch:
+
+concurrency:
+  group: og-previews
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Write service account key
+        run: echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Check for work (no browser needed)
+        id: check
+        run: |
+          node scripts/generate-og-previews.mjs --check | tee check.log
+          echo "needs_work=$(grep -o 'needs_work=\(true\|false\)' check.log | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+
+      - name: Install Chromium
+        if: steps.check.outputs.needs_work == 'true'
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate previews
+        if: steps.check.outputs.needs_work == 'true'
+        run: node scripts/generate-og-previews.mjs
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+
+      - name: Commit generated files
+        if: steps.check.outputs.needs_work == 'true'
+        run: |
+          git config user.name "og-previews-bot"
+          git config user.email "actions@github.com"
+          git add b images/og
+          git diff --cached --quiet && echo "nothing to commit" || {
+            git commit -m "Generate OG previews for public boards"
+            git pull --rebase origin ${{ github.ref_name }}
+            git push
+          }
+
+      - name: Deploy to Firebase Hosting
+        if: steps.check.outputs.needs_work == 'true'
+        run: npx firebase-tools deploy --only hosting:wisam --project wisam-3lafi --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
