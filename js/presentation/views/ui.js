@@ -2,7 +2,8 @@
 import { navigate } from '../../core/router.js';
 import { authState } from '../../core/authState.js';
 import { auth } from '../../core/firebase.js';
-import { signOut } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+import { signOut } from '../../core/firebase-sdk.js';
+import { APP_NAME } from '../../core/config.js';
 
 export function escapeHtml(value) {
     return String(value ?? '')
@@ -131,7 +132,7 @@ export function topbar(active = '') {
         <nav class="topbar">
             <a href="/" class="topbar-brand">
                 <span class="topbar-icon"></span>
-                <span class="topbar-title">لوحات حفظ القرآن</span>
+                <span class="topbar-title">${APP_NAME}</span>
             </a>
             <div class="topbar-links">
                 ${user ? `

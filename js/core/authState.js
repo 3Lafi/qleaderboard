@@ -1,6 +1,6 @@
 // حالة تسجيل الدخول: مصدر واحد تشترك فيه كل الصفحات
 import { auth } from './firebase.js';
-import { onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+import { onAuthStateChanged } from './firebase-sdk.js';
 
 let user = null;
 let resolved = false;

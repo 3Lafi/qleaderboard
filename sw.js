@@ -1,39 +1,8 @@
-const CACHE_NAME = 'quran-app-v5';
+// عامل الخدمة: يخزّن أصول التطبيق مؤقتاً ليعمل دون اتصال — بلا قائمة ملفات يدوية تُنسى عند إضافة/إعادة تسمية ملف
+const CACHE_NAME = 'wisam-cache-v1';
 
-const urlsToCache = [
-  './',
-  './index.html',
-  './css/main.css',
-  './css/components.css',
-  './css/admin.css',
-  './manifest.json',
-  './js/app.js',
-  './js/sw-register.js',
-  './js/core/config.js',
-  './js/core/firebase.js',
-  './js/core/authState.js',
-  './js/core/router.js',
-  './js/core/quran-data.js',
-  './js/core/curriculum-data.js',
-  './js/domain/models/Student.js',
-  './js/domain/models/Leaderboard.js',
-  './js/domain/usecases/RankStudents.js',
-  './js/domain/usecases/ClassProgress.js',
-  './js/data/repositories/BoardRepository.js',
-  './js/presentation/views/ui.js',
-  './js/presentation/views/StudentCardView.js',
-  './js/presentation/views/ClassProgressView.js',
-  './js/presentation/views/SurahPickerView.js',
-  './js/presentation/pages/LandingPage.js',
-  './js/presentation/pages/LoginPage.js',
-  './js/presentation/pages/MyBoardsPage.js',
-  './js/presentation/pages/BoardSettingsPage.js',
-  './js/presentation/pages/StudentsPage.js',
-  './js/presentation/pages/BoardPage.js',
-  './js/presentation/pages/NotFoundPage.js',
-  './images/quran.png',
-  './images/quran-icon.png',
-];
+// الصدفة الأساسية فقط تُخزَّن مسبقاً؛ بقية الأصول تُخزَّن تلقائياً عند أول طلب لها (انظر fetch أدناه)
+const PRECACHE_URLS = ['/', '/index.html'];
 
 // أصول Firebase مثبّتة بإصدار محدد فهي غير قابلة للتغيير — يصح تخزينها أولاً بأولاً بلا انتهاء صلاحية
 const CACHE_FIRST_HOSTS = ['www.gstatic.com', 'fonts.googleapis.com', 'fonts.gstatic.com'];
@@ -48,61 +17,76 @@ const NEVER_INTERCEPT_HOSTS = [
 ];
 
 self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(PRECACHE_URLS)));
   self.skipWaiting();
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(cacheNames =>
-      Promise.all(
-        cacheNames
-          .filter(name => name.startsWith('quran-app-') && name !== CACHE_NAME)
-          .map(name => caches.delete(name))
-      )
+      Promise.all(cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name)))
     )
   );
   self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
-  const url = new URL(event.request.url);
+  const { request } = event;
+  if (request.method !== 'GET') return;
+
+  const url = new URL(request.url);
 
   if (NEVER_INTERCEPT_HOSTS.includes(url.hostname)) {
     return; // اتركها تمر دون اعتراض حتى لا تُكسر اتصالات WebChannel الطويلة الخاصة بـ Firestore
   }
 
   if (CACHE_FIRST_HOSTS.includes(url.hostname)) {
-    event.respondWith(
-      caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        return fetch(event.request).then(networkResponse => {
-          if (networkResponse.ok) {
-            const clone = networkResponse.clone();
-            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-          }
-          return networkResponse;
-        });
-      })
-    );
+    event.respondWith(cacheFirst(request));
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then(networkResponse => {
-        if (event.request.method === 'GET' && networkResponse.ok) {
-          const clone = networkResponse.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return networkResponse;
-      })
-      .catch(() => caches.match(event.request).then(cached => {
-        if (cached) return cached;
-        if (event.request.mode === 'navigate') return caches.match('./index.html');
-        return Response.error();
-      }))
-  );
+  if (request.mode === 'navigate') {
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  if (url.origin === self.location.origin) {
+    event.respondWith(staleWhileRevalidate(request));
+  }
 });
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.ok) await putInCache(request, response.clone());
+  return response;
+}
+
+// تنقلات الصفحة (index.html): يُحاول الشبكة أولاً ليصل التحديث فوراً، ويسقط للنسخة المخزّنة عند تعذّر الاتصال
+async function networkFirst(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) await putInCache(request, response.clone());
+    return response;
+  } catch {
+    return (await caches.match(request)) || (await caches.match('/index.html'));
+  }
+}
+
+// الأصول الثابتة (JS/CSS/صور): تُعرض من المخزن المؤقت فوراً للسرعة، وتُحدَّث في الخلفية لأي زيارة لاحقة
+async function staleWhileRevalidate(request) {
+  const cached = await caches.match(request);
+  const networkPromise = fetch(request)
+    .then(response => {
+      if (response.ok) putInCache(request, response.clone());
+      return response;
+    })
+    .catch(() => null);
+  return cached || (await networkPromise) || Response.error();
+}
+
+async function putInCache(request, response) {
+  const cache = await caches.open(CACHE_NAME);
+  await cache.put(request, response);
+}

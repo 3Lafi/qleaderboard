@@ -7,7 +7,7 @@ import {
     createUserWithEmailAndPassword,
     sendPasswordResetEmail,
     updateProfile,
-} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
+} from '../../core/firebase-sdk.js';
 import { bannerHeader, toast } from '../views/ui.js';
 import { queryParam } from '../../core/router.js';
 
@@ -21,9 +21,11 @@ const ERROR_MESSAGES = {
     'auth/popup-blocked': 'المتصفح منع النافذة المنبثقة — جرّب الدخول بالبريد الإلكتروني.',
     'auth/popup-closed-by-user': 'تم إغلاق نافذة الدخول قبل الاكتمال.',
     'auth/network-request-failed': 'تعذر الاتصال بالشبكة.',
+    'auth/unauthorized-domain': 'هذا النطاق غير مصرّح له بتسجيل الدخول — أضفه في Authentication > Settings > Authorized domains.',
 };
 
 function friendlyError(err) {
+    if (!ERROR_MESSAGES[err?.code]) console.error('Unhandled auth error:', err?.code, err);
     return ERROR_MESSAGES[err?.code] || 'حدث خطأ أثناء تسجيل الدخول، حاول مرة أخرى.';
 }
 

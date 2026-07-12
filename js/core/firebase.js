@@ -1,13 +1,7 @@
 // الملف الوحيد الذي يحتوي إعدادات Firebase.
 // خطوات الإعداد: أنشئ مشروعاً في console.firebase.google.com ثم أضف تطبيق ويب
 // وانسخ كائن firebaseConfig هنا بدل القيم الافتراضية.
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-app.js';
-import { getAuth } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-auth.js';
-import {
-    initializeFirestore,
-    persistentLocalCache,
-    persistentMultipleTabManager,
-} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+import { initializeApp, getAuth, initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from './firebase-sdk.js';
 
 const firebaseConfig = {
     apiKey: 'AIzaSyCGW9PNgB-tiRzFbcrvK2aXa1Gs-RZ3GHg',

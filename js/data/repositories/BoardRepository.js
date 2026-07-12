@@ -3,10 +3,10 @@ import { db } from '../../core/firebase.js';
 import {
     collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField,
     query, where, onSnapshot, serverTimestamp, arrayUnion, arrayRemove,
-} from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
+} from '../../core/firebase-sdk.js';
 import { Leaderboard } from '../../domain/models/Leaderboard.js';
+import { sanitizeSettings } from '../../domain/models/BoardSettings.js';
 import { LIMITS } from '../../core/config.js';
-import { expandScope } from '../../core/quran-data.js';
 
 const COLLECTION = 'leaderboards';
 
@@ -52,28 +52,15 @@ export const BoardRepository = {
             ownerUid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            settings,
+            settings: sanitizeSettings(settings),
             students: {},
-        });
-        return id;
-    },
-
-    // يُستخدم في الاستيراد لكتابة لوحة كاملة بطلابها بكتابة واحدة
-    async createWithStudents(ownerUid, settings, students) {
-        const id = randomId();
-        await setDoc(boardRef(id), {
-            ownerUid,
-            createdAt: serverTimestamp(),
-            updatedAt: serverTimestamp(),
-            settings,
-            students,
         });
         return id;
     },
 
     async updateSettings(boardId, settings) {
         await updateDoc(boardRef(boardId), {
-            settings,
+            settings: sanitizeSettings(settings),
             updatedAt: serverTimestamp(),
         });
     },
@@ -129,16 +116,3 @@ export const BoardRepository = {
         await updateDoc(boardRef(boardId), updates);
     },
 };
-
-export function defaultSettings() {
-    return {
-        name: '',
-        schoolName: '',
-        classLabel: '',
-        scope: { type: 'quran', juzNumbers: [], surahNumbers: expandScope({ type: 'quran' }) },
-        direction: 'reverse',
-        isPublic: true,
-        showClassProgress: true,
-        classCurrentSurah: null,
-    };
-}
