@@ -8,6 +8,7 @@ const urlsToCache = [
   './css/admin.css',
   './manifest.json',
   './js/app.js',
+  './js/sw-register.js',
   './js/core/config.js',
   './js/core/firebase.js',
   './js/core/authState.js',

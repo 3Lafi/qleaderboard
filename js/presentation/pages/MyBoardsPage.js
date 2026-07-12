@@ -28,7 +28,8 @@ export default async function MyBoardsPage(container, { navigate }) {
         boards = await BoardRepository.listMine(user.uid);
     } catch (err) {
         console.error(err);
-        host.innerHTML = `<div id="error-msg" style="display:block;"><p>يتعذر تحميل اللوحات حالياً.</p><button class="retry-btn" onclick="location.reload()">تحديث الصفحة</button></div>`;
+        host.innerHTML = `<div id="error-msg" style="display:block;"><p>يتعذر تحميل اللوحات حالياً.</p><button class="retry-btn" id="boardsRetryBtn">تحديث الصفحة</button></div>`;
+        host.querySelector('#boardsRetryBtn').addEventListener('click', () => location.reload());
         return;
     }
 

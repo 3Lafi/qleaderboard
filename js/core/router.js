@@ -90,8 +90,9 @@ async function handleRoute() {
         container.innerHTML = `
             <div id="error-msg" style="display:block;">
                 <p>حدث خطأ غير متوقع أثناء تحميل الصفحة.</p>
-                <button class="retry-btn" onclick="location.reload()">تحديث الصفحة</button>
+                <button class="retry-btn" id="routeRetryBtn">تحديث الصفحة</button>
             </div>`;
+        container.querySelector('#routeRetryBtn').addEventListener('click', () => location.reload());
     }
 }
 
