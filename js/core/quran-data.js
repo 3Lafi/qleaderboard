@@ -1,6 +1,8 @@
 // البيانات الثابتة لسور القرآن الكريم — عدّ الآيات على رواية حفص (العدّ الكوفي، المجموع 6236)
 // juz = الجزء الذي تبدأ فيه السورة (الجزءان 2 و5 لا تبدأ فيهما أي سورة)
 
+import { resolveCurriculumSurahs } from './curriculum-data.js';
+
 export const SURAHS = [
     { n: 1, name: "الفاتحة", ayahs: 7, juz: 1 },
     { n: 2, name: "البقرة", ayahs: 286, juz: 1 },
@@ -150,6 +152,9 @@ export function expandScope(scope) {
     if (scope.type === 'juz') {
         const juzSet = new Set(scope.juzNumbers || []);
         return SURAHS.filter(s => juzSet.has(s.juz)).map(s => s.n);
+    }
+    if (scope.type === 'curriculum') {
+        return scope.curriculum ? resolveCurriculumSurahs(scope.curriculum) : [];
     }
     // custom
     const nums = (scope.surahNumbers || []).filter(n => byNumber.has(n));

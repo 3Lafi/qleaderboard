@@ -80,6 +80,18 @@ export function renderMemorizationChipGrid({ orderedSurahs, memorizedSet, onTogg
     return wrap;
 }
 
+// معاينة غير تفاعلية لنطاق منهج محسوب تلقائياً (بلا إمكانية تبديل)
+export function renderCurriculumPreviewChips(surahNumbers) {
+    const wrap = document.createElement('div');
+    wrap.className = 'chip-grid';
+    wrap.innerHTML = surahNumbers.map(n => `
+        <button type="button" class="chip chip-selected" disabled>
+            <span>${escapeHtml(SURAHS[n - 1].name)}</span>
+            <span class="chip-ayahs">${surahAyahs(n)} آية</span>
+        </button>`).join('');
+    return wrap;
+}
+
 export function scopeSummaryText(surahNumbers) {
     const count = surahNumbers.length;
     const ayahs = surahNumbers.reduce((sum, n) => sum + surahAyahs(n), 0);

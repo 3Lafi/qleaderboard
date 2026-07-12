@@ -10,12 +10,12 @@ import {
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';
 
 const firebaseConfig = {
-    apiKey: 'PASTE_API_KEY',
-    authDomain: 'PASTE_PROJECT_ID.firebaseapp.com',
-    projectId: 'PASTE_PROJECT_ID',
-    storageBucket: 'PASTE_PROJECT_ID.firebasestorage.app',
-    messagingSenderId: 'PASTE_SENDER_ID',
-    appId: 'PASTE_APP_ID',
+    apiKey: 'AIzaSyCGW9PNgB-tiRzFbcrvK2aXa1Gs-RZ3GHg',
+    authDomain: 'wisam-3lafi.firebaseapp.com',
+    projectId: 'wisam-3lafi',
+    storageBucket: 'wisam-3lafi.firebasestorage.app',
+    messagingSenderId: '586769682323',
+    appId: '1:586769682323:web:ee86c70831a778f33c2266',
 };
 
 export const isConfigured = !firebaseConfig.apiKey.startsWith('PASTE_');
