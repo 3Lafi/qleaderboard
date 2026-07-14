@@ -104,13 +104,24 @@ test('create: an authenticated user can create a valid board they own', async ()
     }));
 });
 
-test('create: rejected without a banner theme', async () => {
+test('create: a stale pre-Phase-6 client with no banner field at all is still allowed (cache-staleness backward compat)', async () => {
     const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
-    await assertFails(setDoc(doc(ownerDb, 'leaderboards', 'c6'), {
+    await assertSucceeds(setDoc(doc(ownerDb, 'leaderboards', 'c6'), {
         ownerUid: OWNER_UID,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         settings: { name: 'بلا بانر', isPublic: true },
+        students: {},
+    }));
+});
+
+test('create: rejected when a banner IS sent but its themeId is the wrong type', async () => {
+    const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
+    await assertFails(setDoc(doc(ownerDb, 'leaderboards', 'c7'), {
+        ownerUid: OWNER_UID,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        settings: { name: 'بانر فاسد', isPublic: true, banner: { themeId: 42 } },
         students: {},
     }));
 });

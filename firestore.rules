@@ -19,11 +19,17 @@ service cloud.firestore {
       allow list: if request.auth != null
                   && request.auth.uid == resource.data.ownerUid;
 
+      // banner اختياري عند الإنشاء (وليس إلزامياً) عمداً: عملاء قدامى قد يبقون مخبّئين
+      // لدى المتصفح (Cache-Control على ملفات JS + service worker) لغاية ساعة بعد كل نشر —
+      // لو أُلزم هنا لرفضت القاعدة إنشاء أي لوحة من عميل قديم لا يرسل الحقل أصلاً.
+      // لو أُرسل يجب أن يكون بالشكل الصحيح؛ لو غاب فالقراءة اللاحقة تفترض السمة الافتراضية
+      // (انظر Leaderboard.js) وتُثبَّت لاحقاً عبر مسار "لوحة قديمة" في قاعدة update أدناه.
       allow create: if request.auth != null
                     && request.resource.data.ownerUid == request.auth.uid
                     && isValidBoardName(request.resource.data.settings.name)
                     && request.resource.data.settings.isPublic is bool
-                    && request.resource.data.settings.banner.themeId is string
+                    && (!('banner' in request.resource.data.settings)
+                        || request.resource.data.settings.banner.themeId is string)
                     && request.resource.data.students == {}
                     && request.resource.data.createdAt == request.time;
 
