@@ -12,6 +12,7 @@ import { autoPriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMe
 export default async function BoardSettingsPage(container, { toast, params = {}, navigate, layout, user, services, setTitle, signal, refresh }) {
     const BoardRepository = services.boards;
     const CohortRepository = services.cohorts;
+    const OgPreviewTrigger = services.ogPreview;
     const isEdit = Boolean(params.boardId);
     let board = null;
     setTitle(`${isEdit ? 'إعدادات اللوحة' : 'لوحة جديدة'} — وسام`);
@@ -298,6 +299,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
         submit.textContent=isEdit?'جارِ الحفظ…':'جارِ إنشاء اللوحة…';
         try {
             if(isEdit) {
+                const bannerChanged = JSON.stringify(board.settings.banner || {}) !== JSON.stringify(newSettings.banner || {});
                 await BoardRepository.updateSettings(board.id,newSettings);
                 if (!form.isConnected) return;
                 toast([...oldSurahs].some(n=>!newSettings.scope.surahNumbers.includes(n))?'تم الحفظ — سجلات الحفظ خارج الخطة الجديدة محفوظة':'تم حفظ التغييرات','success');
@@ -306,6 +308,9 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                 const nextCohort = newSettings.cohortId || '';
                 Object.assign(settings,newSettings);
                 board.settings=newSettings;
+                if (bannerChanged && newSettings.isPublic) {
+                    OgPreviewTrigger.request(board.id).catch(error => console.error('OG preview refresh request failed', error));
+                }
                 if (nextCohort) {
                     try {
                         await CohortRepository.linkProgram(nextCohort, board.id);
@@ -324,6 +329,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             } else {
                 const id=await BoardRepository.create(user.uid,newSettings);
                 if (!form.isConnected) return;
+                if (newSettings.isPublic) OgPreviewTrigger.request(id).catch(error => console.error('OG preview refresh request failed', error));
                 await layout?.refreshUserBoards?.();
                 toast('تم إنشاء اللوحة. أضف أول طالب لتبدأ.','success');
                 navigate(`/edit/${id}/students`);

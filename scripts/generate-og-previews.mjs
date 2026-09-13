@@ -145,14 +145,9 @@ async function loadRequestedPublicBoard(id) {
     const response = await fetch(url);
     if (!response.ok) throw new Error(`Could not read board ${id}: ${response.status}`);
     const document = await response.json();
-    const settings = document.fields?.settings?.mapValue?.fields || {};
-    if (settings.isPublic?.booleanValue !== true) throw new Error(`Board ${id} is not public`);
-    return normaliseBoard(id, {
-        name: settings.name?.stringValue,
-        schoolName: settings.schoolName?.stringValue,
-        classLabel: settings.classLabel?.stringValue,
-        banner: { themeId: settings.banner?.mapValue?.fields?.themeId?.stringValue },
-    });
+    const data = decodeFirestoreFields(document.fields || {});
+    if (data.settings?.isPublic !== true) return null;
+    return normaliseBoard(id, data.settings || {});
 }
 
 function decodeFirestoreValue(value) {
@@ -164,6 +159,10 @@ function decodeFirestoreValue(value) {
     if ('arrayValue' in value) return (value.arrayValue.values || []).map(decodeFirestoreValue);
     if ('mapValue' in value) return Object.fromEntries(Object.entries(value.mapValue.fields || {}).map(([key, child]) => [key, decodeFirestoreValue(child)]));
     return null;
+}
+
+function decodeFirestoreFields(fields) {
+    return Object.fromEntries(Object.entries(fields).map(([key, value]) => [key, decodeFirestoreValue(value)]));
 }
 
 function firebaseCliAccessToken() {
@@ -202,8 +201,20 @@ async function loadBoardsWithFirebaseCli() {
     });
 }
 
+async function loadRequestedBoardWithServiceAccount(id) {
+    const firebaseApp = initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'wisam-3lafi', credential: applicationDefault() });
+    const document = await getFirestore(firebaseApp).collection('leaderboards').doc(id).get();
+    if (!document.exists || document.data().settings?.isPublic !== true) return null;
+    return normaliseBoard(document.id, document.data().settings || {});
+}
+
 async function loadBoards() {
-    if (requestedBoardId) return [await loadRequestedPublicBoard(requestedBoardId)];
+    if (requestedBoardId) {
+        const board = process.env.GOOGLE_APPLICATION_CREDENTIALS
+            ? await loadRequestedBoardWithServiceAccount(requestedBoardId)
+            : await loadRequestedPublicBoard(requestedBoardId);
+        return board ? [board] : [];
+    }
     if (firebaseCliAccessToken()) return loadBoardsWithFirebaseCli();
     try {
         const firebaseApp = initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'wisam-3lafi', credential: applicationDefault() });
@@ -234,9 +245,17 @@ for (const board of boards) {
     if (!existsSync(destination) || readFileSync(destination, 'utf8') !== html) pagesToWrite.push({ destination, html });
 }
 
-const staleFiles = requestedBoardId ? [] : [
-    ...readdirSync(outputDirectory).filter((name) => name.endsWith('.jpg') && !expectedImages.has(name)).map((name) => path.join(outputDirectory, name)),
-    ...readdirSync(pageDirectory).filter((name) => name.endsWith('.html') && !expectedPages.has(name)).map((name) => path.join(pageDirectory, name)),
+const staleImageNames = readdirSync(outputDirectory).filter((name) => {
+    if (!name.endsWith('.jpg') || expectedImages.has(name)) return false;
+    return !requestedBoardId || name.startsWith(`${requestedBoardId}.`);
+});
+const stalePageNames = readdirSync(pageDirectory).filter((name) => {
+    if (!name.endsWith('.html') || expectedPages.has(name)) return false;
+    return !requestedBoardId || name === `${requestedBoardId}.html`;
+});
+const staleFiles = [
+    ...staleImageNames.map((name) => path.join(outputDirectory, name)),
+    ...stalePageNames.map((name) => path.join(pageDirectory, name)),
 ];
 const needsWork = imagesToRender.length + pagesToWrite.length + staleFiles.length > 0;
 console.log(`public boards: ${boards.length}`);

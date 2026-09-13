@@ -1,0 +1,9 @@
+name = "wisam-og-trigger"
+main = "src/index.js"
+compatibility_date = "2026-09-13"
+
+[vars]
+FIREBASE_PROJECT_ID = "wisam-3lafi"
+FIREBASE_API_KEY = "AIzaSyCGW9PNgB-tiRzFbcrvK2aXa1Gs-RZ3GHg"
+GITHUB_OWNER = "3Lafi"
+GITHUB_REPOSITORY = "Wisam"
