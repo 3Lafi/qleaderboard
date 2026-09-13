@@ -302,30 +302,38 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                 const bannerChanged = JSON.stringify(board.settings.banner || {}) !== JSON.stringify(newSettings.banner || {});
                 await BoardRepository.updateSettings(board.id,newSettings);
                 if (!form.isConnected) return;
-                toast([...oldSurahs].some(n=>!newSettings.scope.surahNumbers.includes(n))?'تم الحفظ — سجلات الحفظ خارج الخطة الجديدة محفوظة':'تم حفظ التغييرات','success');
-                // ربط/فصل الدفعة ثم نسخ أسماء أعضائها إلى اللوحة
-                const previousCohort = settings.cohortId || '';
-                const nextCohort = newSettings.cohortId || '';
-                Object.assign(settings,newSettings);
-                board.settings=newSettings;
-                if (bannerChanged && newSettings.isPublic) {
-                    OgPreviewTrigger.request(board.id).catch(error => console.error('OG preview refresh request failed', error));
+                // لا يجوز أن تحوّل أي خطوة لاحقة (مثل تحديث القائمة أو إرسال طلب
+                // OG) نجاح كتابة Firestore إلى رسالة «تعذر الحفظ» للمعلّم.
+                try {
+                    toast([...oldSurahs].some(n=>!newSettings.scope.surahNumbers.includes(n))?'تم الحفظ — سجلات الحفظ خارج الخطة الجديدة محفوظة':'تم حفظ التغييرات','success');
+                    // ربط/فصل الدفعة ثم نسخ أسماء أعضائها إلى اللوحة
+                    const previousCohort = settings.cohortId || '';
+                    const nextCohort = newSettings.cohortId || '';
+                    Object.assign(settings,newSettings);
+                    board.settings=newSettings;
+                    if (bannerChanged && newSettings.isPublic) {
+                        OgPreviewTrigger.request(board.id).catch(error => console.error('OG preview refresh request failed', error));
+                    }
+                    if (nextCohort) {
+                        try {
+                            await CohortRepository.linkProgram(nextCohort, board.id);
+                            if (previousCohort && previousCohort !== nextCohort) await CohortRepository.unlinkProgram(previousCohort, board.id);
+                            const added = await syncCohortStudents(nextCohort);
+                            if (added) toast(`أُضيف ${added} طالباً من الدفعة`, 'success');
+                        } catch (error) { console.error(error); }
+                    } else if (previousCohort) {
+                        try { await CohortRepository.unlinkProgram(previousCohort, board.id); } catch (error) { console.error(error); }
+                    }
+                    oldSurahs.clear(); newSettings.scope.surahNumbers.forEach(n=>oldSurahs.add(n));
+                    layout?.setActiveBoard?.(board);
+                    refreshShare();
+                    savedSnapshot = formSnapshot(); saveFailed = false;
+                    container.querySelector('#settingsBoardName').textContent = newSettings.name;
+                } catch (afterSaveError) {
+                    console.error('Board saved, but post-save UI work failed', afterSaveError);
+                    savedSnapshot = formSnapshot(); saveFailed = false;
+                    refreshSaveState();
                 }
-                if (nextCohort) {
-                    try {
-                        await CohortRepository.linkProgram(nextCohort, board.id);
-                        if (previousCohort && previousCohort !== nextCohort) await CohortRepository.unlinkProgram(previousCohort, board.id);
-                        const added = await syncCohortStudents(nextCohort);
-                        if (added) toast(`أُضيف ${added} طالباً من الدفعة`, 'success');
-                    } catch (error) { console.error(error); }
-                } else if (previousCohort) {
-                    try { await CohortRepository.unlinkProgram(previousCohort, board.id); } catch (error) { console.error(error); }
-                }
-                oldSurahs.clear(); newSettings.scope.surahNumbers.forEach(n=>oldSurahs.add(n));
-                layout?.setActiveBoard?.(board);
-                refreshShare();
-                savedSnapshot = formSnapshot(); saveFailed = false;
-                container.querySelector('#settingsBoardName').textContent = newSettings.name;
             } else {
                 const id=await BoardRepository.create(user.uid,newSettings);
                 if (!form.isConnected) return;
