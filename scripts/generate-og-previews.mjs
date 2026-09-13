@@ -20,7 +20,14 @@ const checkOnly = process.argv.includes('--check');
 const boardArgument = process.argv.find((argument) => argument.startsWith('--board='));
 const requestedBoardId = boardArgument?.slice('--board='.length) || null;
 const firebaseApiKey = 'AIzaSyCGW9PNgB-tiRzFbcrvK2aXa1Gs-RZ3GHg';
-const ogRenderVersion = 'board-banner-screenshot-v3';
+const ogRendererStyle = [
+    readFileSync(path.join(root, 'css', 'main.css')),
+    readFileSync(path.join(root, 'css', 'wisam.css')),
+].join('\n');
+const ogRenderVersion = createHash('sha1')
+    .update('board-banner-screenshot-v4')
+    .update(ogRendererStyle)
+    .digest('hex');
 
 function escapeHtml(value) {
     return String(value ?? '')
@@ -33,9 +40,17 @@ function escapeHtml(value) {
 
 function boardHash(board) {
     return createHash('sha1')
-        .update([ogRenderVersion, board.themeId, board.name, board.schoolName, board.classLabel].join('\u0000'))
+        .update([ogRenderVersion, board.bannerVisual, board.name, board.schoolName, board.classLabel].join('\u0000'))
         .digest('hex')
         .slice(0, 10);
+}
+
+function stableSerialize(value) {
+    if (Array.isArray(value)) return `[${value.map(stableSerialize).join(',')}]`;
+    if (value && typeof value === 'object') {
+        return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(',')}}`;
+    }
+    return JSON.stringify(value ?? null);
 }
 
 function updateMeta(html, property, value) {
@@ -107,6 +122,8 @@ async function screenshotBoardBanner(page, board, destination, port) {
         #appSidebarHost, #appHeaderHost, #navProgress { display: none !important; }
         .app-shell, .app-main-wrapper, #pageContent, #pageRoot { display: block !important; width: 1200px !important; min-width: 1200px !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
         .public-board .board-banner { width: 1200px !important; min-height: 630px !important; height: 630px !important; margin: 0 !important; }
+        .public-board .board-banner .banner-title { max-width: 1000px !important; font-size: clamp(58px, 7vw, 84px) !important; line-height: 1.28 !important; }
+        .public-board .board-banner .banner-subtitle { max-width: 950px !important; font-size: clamp(26px, 2.8vw, 36px) !important; line-height: 1.6 !important; }
     ` });
     await banner.screenshot({ path: destination, type: 'jpeg', quality: 88 });
 }
@@ -118,6 +135,7 @@ function normaliseBoard(id, settings) {
         schoolName: String(settings.schoolName || '').trim(),
         classLabel: String(settings.classLabel || '').trim(),
         themeId: settings.banner?.themeId || DEFAULT_THEME_ID,
+        bannerVisual: stableSerialize(settings.banner || {}),
     };
     return { ...board, hash: boardHash(board) };
 }
