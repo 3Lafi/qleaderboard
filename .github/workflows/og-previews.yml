@@ -1,30 +1,28 @@
-# يولّد صور معاينة الرابط (WhatsApp/OG) للوحات العامة وينشرها إلى Firebase Hosting.
-# انظر scripts/generate-og-previews.mjs لتفاصيل المنطق.
-#
-# يتطلب سرّ مستودع واحداً: FIREBASE_SERVICE_ACCOUNT — مفتاح JSON لحساب خدمة له دورا
-# Cloud Datastore Viewer (قراءة اللوحات) و Firebase Hosting Admin (النشر).
-#
-# المستودع خاص، لذا دقائق Actions محدودة: مسار سريع يفحص أولاً دون متصفح، ولا يثبّت
-# Chromium وينشر إلا عند وجود عمل فعلي. عدّل الجدولة أدناه لموازنة السرعة مع الدقائق.
-name: OG previews
+# Keeps link previews in sync with public boards. WhatsApp reads the static page
+# at /b/{boardId}; it never evaluates the JavaScript application.
+name: Refresh board link previews
 
 on:
   schedule:
-    - cron: '17 * * * *' # كل ساعة (دقيقة 17 لتفادي ازدحام رأس الساعة)
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
-  group: og-previews
+  group: board-og-previews
   cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
-  generate:
+  refresh:
+    # Repositories without the service-account secret keep normal CI green.
+    if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: actions/setup-node@v4
         with:
@@ -33,43 +31,40 @@ jobs:
 
       - run: npm ci
 
-      - name: Write service account key
-        run: echo "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/sa.json"
+      - name: Prepare Firebase credentials
+        run: printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
 
-      - name: Check for work (no browser needed)
-        id: check
+      - name: Check whether a preview changed
+        id: preview
         run: |
-          node scripts/generate-og-previews.mjs --check | tee check.log
-          echo "needs_work=$(grep -o 'needs_work=\(true\|false\)' check.log | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          node scripts/generate-og-previews.mjs --check | tee preview.log
+          echo "needs_work=$(sed -n 's/^needs_work=//p' preview.log)" >> "$GITHUB_OUTPUT"
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
 
-      - name: Install Chromium
-        if: steps.check.outputs.needs_work == 'true'
+      - name: Install browser renderer
+        if: steps.preview.outputs.needs_work == 'true'
         run: npx playwright install --with-deps chromium
 
-      - name: Generate previews
-        if: steps.check.outputs.needs_work == 'true'
+      - name: Generate the public board pages and images
+        if: steps.preview.outputs.needs_work == 'true'
         run: node scripts/generate-og-previews.mjs
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
 
-      - name: Commit generated files
-        if: steps.check.outputs.needs_work == 'true'
+      - name: Commit generated previews
+        if: steps.preview.outputs.needs_work == 'true'
         run: |
-          git config user.name "og-previews-bot"
+          git config user.name "wisam-preview-bot"
           git config user.email "actions@github.com"
           git add b images/og
-          git diff --cached --quiet && echo "nothing to commit" || {
-            git commit -m "Generate OG previews for public boards"
-            git pull --rebase origin ${{ github.ref_name }}
-            git push
-          }
+          git diff --cached --quiet || git commit -m "Refresh board link previews"
+          git push
 
-      - name: Deploy to Firebase Hosting
-        if: steps.check.outputs.needs_work == 'true'
-        run: npx firebase-tools deploy --only hosting:wisam --project wisam-3lafi --non-interactive
+      - name: Publish to Firebase Hosting
+        if: steps.preview.outputs.needs_work == 'true'
+        run: npx --yes firebase-tools@latest deploy --only hosting:wisam --project wisam-3lafi --non-interactive
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/sa.json
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json

@@ -1,5 +1,5 @@
 // شبكة شرائح قابلة لإعادة الاستخدام: اختيار نطاق (سور/أجزاء) أو تحديد الحفظ لطالب
-import { SURAHS, JUZ_WITH_SURAHS, surahsInJuz, surahAyahs } from '../../core/quran-data.js';
+import { SURAHS, JUZ_WITH_SURAHS, surahsInJuz, surahAyahs } from '../../shared/quran-data.js';
 import { escapeHtml } from './ui.js';
 
 // وضع اختيار السور المخصصة (114 شريحة برقم السورة)
@@ -63,8 +63,14 @@ export function renderMemorizationChipGrid({ orderedSurahs, memorizedSet, onTogg
             <span class="chip-ayahs">${surahAyahs(n)} آية</span>
         </button>`).join('');
 
-    wrap.querySelectorAll('.chip').forEach(chip => {
+    let saving = false;
+    const chips = [...wrap.querySelectorAll('.chip')];
+    chips.forEach(chip => {
         chip.addEventListener('click', async () => {
+            if (saving) return;
+            saving = true;
+            wrap.setAttribute('aria-busy', 'true');
+            chips.forEach(button => { button.disabled = true; });
             const n = Number(chip.dataset.n);
             const nowMemorized = !chip.classList.contains('chip-memorized');
             chip.classList.toggle('chip-memorized', nowMemorized);
@@ -75,9 +81,11 @@ export function renderMemorizationChipGrid({ orderedSurahs, memorizedSet, onTogg
             } catch (err) {
                 chip.classList.toggle('chip-memorized', !nowMemorized);
                 chip.setAttribute('aria-pressed', String(!nowMemorized));
-                throw err;
+                // يعرض المستدعي رسالة الخطأ؛ نعيد الحالة هنا دون رفض غير معالج.
             } finally {
-                chip.disabled = false;
+                saving = false;
+                wrap.setAttribute('aria-busy', 'false');
+                chips.forEach(button => { button.disabled = disabled; });
             }
         });
     });

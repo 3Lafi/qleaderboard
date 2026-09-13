@@ -1,11 +1,21 @@
-export function renderNotFound(container) {
-    container.innerHTML = `
-        <div id="error-msg" style="display:block;">
-            <p>الصفحة المطلوبة غير موجودة.</p>
-            <a href="/" class="btn btn-primary" style="display:inline-block; margin-top:15px;">العودة للرئيسية</a>
-        </div>`;
+import { createFeedbackState } from '../layout/FeedbackStateView.js';
+
+export function renderNotFound(container, { layout, user, setTitle } = {}) {
+    setTitle('الصفحة غير موجودة — وسام');
+    layout?.announcePage?.();
+    const signedIn = Boolean(user);
+    container.replaceChildren(createFeedbackState({
+        type: 'unavailable',
+        icon: '🧭',
+        eyebrow: '404 · لنعد إلى الطريق',
+        title: 'لم نجد هذه الصفحة',
+        message: 'قد يكون الرابط غير صحيح أو تغير عنوان الصفحة.',
+        actions: [
+            signedIn ? { label: 'لوحاتي', href: '/dashboard', primary: true } : { label: 'العودة للرئيسية', href: '/', primary: true },
+            { label: 'استكشاف الأوسمة', href: '/badges' },
+            ...(signedIn ? [{ label: 'الرئيسية', href: '/' }] : [])
+        ]
+    }));
 }
 
-export default function NotFoundPage(container) {
-    renderNotFound(container);
-}
+export default renderNotFound;

@@ -1,5 +1,5 @@
 // عامل الخدمة: يخزّن أصول التطبيق مؤقتاً ليعمل دون اتصال — بلا قائمة ملفات يدوية تُنسى عند إضافة/إعادة تسمية ملف
-const CACHE_NAME = 'wisam-cache-v1';
+const CACHE_NAME = 'wisam-cache-v25-without-progress-map';
 
 // الصدفة الأساسية فقط تُخزَّن مسبقاً؛ بقية الأصول تُخزَّن تلقائياً عند أول طلب لها (انظر fetch أدناه)
 const PRECACHE_URLS = ['/', '/index.html'];
@@ -51,7 +51,11 @@ self.addEventListener('fetch', event => {
   }
 
   if (url.origin === self.location.origin) {
-    event.respondWith(staleWhileRevalidate(request));
+    if (/\.(js|css)$/.test(url.pathname)) {
+      event.respondWith(networkAssetFirst(request));
+    } else {
+      event.respondWith(staleWhileRevalidate(request, event));
+    }
   }
 });
 
@@ -75,18 +79,30 @@ async function networkFirst(request) {
 }
 
 // الأصول الثابتة (JS/CSS/صور): تُعرض من المخزن المؤقت فوراً للسرعة، وتُحدَّث في الخلفية لأي زيارة لاحقة
-async function staleWhileRevalidate(request) {
+async function staleWhileRevalidate(request, event) {
   const cached = await caches.match(request);
   const networkPromise = fetch(request)
-    .then(response => {
-      if (response.ok) putInCache(request, response.clone());
+    .then(async response => {
+      if (response.ok) await putInCache(request, response.clone());
       return response;
     })
     .catch(() => null);
+  event.waitUntil(networkPromise);
   return cached || (await networkPromise) || Response.error();
 }
 
 async function putInCache(request, response) {
   const cache = await caches.open(CACHE_NAME);
   await cache.put(request, response);
+}
+
+// ملفات الشيفرة من الشبكة أولاً كي لا يجتمع إصدار قديم من مكوّن مع ملف جديد.
+async function networkAssetFirst(request) {
+  try {
+    const response = await fetch(request, { cache: 'no-cache' });
+    if (response.ok) await putInCache(request, response.clone());
+    return response;
+  } catch {
+    return (await caches.match(request)) || Response.error();
+  }
 }

@@ -1,63 +1,29 @@
-// بطاقة طالب واحد في اللوحة العامة: شريط تقدم، شارات، خط زمني للسور
-import { escapeHtml } from './ui.js';
+import { escapeHtml, formatProgress } from './ui.js';
+import { earnedBadges } from '../../domain/usecases/Badges.js';
+import { uiIcon } from './InterfaceIcons.js';
+import { completionMedal } from './CompletionMedalView.js';
 
-const MEDALS = ['🥇', '🥈', '🥉'];
-
-export function renderStudentCard(student, rank) {
-    const isCompleted = student.isCompleted;
-    const cardClasses = isCompleted ? 'card gold-card' : 'card';
-
-    const timeline = student.surahsTimeline || [];
-    let surahsHtml;
-    if (timeline.length > 0) {
-        const tags = timeline
-            .map(s => `<span class="surah-tag tag-${s.state}">${escapeHtml(s.name)}</span>`)
-            .join('');
-        surahsHtml = `<div class="tags-container">${tags}</div>`;
-    } else {
-        surahsHtml = '<span style="color:var(--meta-text); font-size:0.9rem; font-weight:bold;">لا توجد خطة منهج مسجلة</span>';
+export function renderStudentCard(student, rank, { profileHref } = {}) {
+    const progress=Math.max(0,Math.min(100,student.progress));
+    const complete=student.isCompleted;
+    const count=earnedBadges(student.effectiveMemorized || student.memorized).length;
+    const card=document.createElement('article');
+    card.className=`card student-summary student-journey ${complete?'gold-card':''}`;
+    card.innerHTML=`
+        <div class="student-card-identity"><h3 class="student-name">${escapeHtml(student.name)}</h3>${complete?`<button type="button" class="completion-crown" aria-label="تاج الإنجاز — تهنئة ${escapeHtml(student.name)} بإنجاز المنهج" aria-expanded="false">${completionMedal()}</button>`:''}</div>
+        ${complete?'<div class="completion-message" hidden><strong>تاج الإنجاز</strong><p>هنيئاً لك إتمام خطة الحفظ!</p></div>':''}
+        <div class="student-progress-label"><span><bdi class="numeric-value">${student.surahsCount}</bdi> من <bdi class="numeric-value">${student.totalSurahsInScope}</bdi> سورة</span><strong><bdi class="numeric-value">${formatProgress(progress)}</bdi><small>٪</small></strong></div>
+        <div class="progress-container" role="progressbar" aria-label="تقدم حفظ ${escapeHtml(student.name)}" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width:${progress}%"></div></div>
+        ${profileHref?`<a class="student-profile-link" href="${escapeHtml(profileHref)}" aria-label="ملف ${escapeHtml(student.name)}، ${count} وساماً مكتسباً"><span class="student-earned-count"><bdi class="numeric-value">${count}</bdi><span>وساماً مكتسباً</span></span><span class="student-profile-action">ملف الطالب ${uiIcon('arrow-left')}</span></a>`:''}`;
+    const crown=card.querySelector('.completion-crown');
+    if(crown) {
+        const message=card.querySelector('.completion-message');
+        message.id=`completion-${student.id}`;crown.setAttribute('aria-controls',message.id);
+        crown.addEventListener('click',()=>{
+            const expanded=crown.getAttribute('aria-expanded')!=='true';
+            crown.setAttribute('aria-expanded',String(expanded));message.hidden=!expanded;
+            card.classList.toggle('completion-celebrating',expanded);
+        });
     }
-
-    const crownIcon = isCompleted ? '<div class="crown-icon">👑</div>' : '';
-    const rankBadge = rank <= 3
-        ? `<div class="rank-badge rank-medal">${MEDALS[rank - 1]}</div>`
-        : `<div class="rank-badge">${rank}</div>`;
-
-    const card = document.createElement('div');
-    card.className = cardClasses;
-    const detailsId = `details-${student.id}`;
-    const btnId = `btn-${student.id}`;
-
-    card.innerHTML = `
-        ${crownIcon}
-        ${rankBadge}
-        <div class="student-name">${escapeHtml(student.name)}</div>
-        <div class="progress-container">
-            <div class="progress-bar" style="width: 0%" data-target-width="${student.progressPercentage}%"></div>
-        </div>
-        <div class="stats">
-            <span class="surah-count-badge">${student.formattedSurahsCount}</span>
-            <span class="percentage-badge">${student.progressPercentage}%</span>
-        </div>
-        <button id="${btnId}" class="details-btn" aria-expanded="false" aria-controls="${detailsId}">عرض السور</button>
-        <div id="${detailsId}" class="surahs-list">${surahsHtml}</div>
-    `;
-
-    const btn = card.querySelector(`#${btnId}`);
-    const details = card.querySelector(`#${detailsId}`);
-    btn.addEventListener('click', () => {
-        const isOpen = details.style.display === 'block';
-        details.style.display = isOpen ? 'none' : 'block';
-        btn.textContent = isOpen ? 'عرض السور' : 'إخفاء السور';
-        btn.setAttribute('aria-expanded', String(!isOpen));
-    });
-
-    requestAnimationFrame(() => {
-        setTimeout(() => {
-            const bar = card.querySelector('.progress-bar');
-            if (bar) bar.style.width = bar.getAttribute('data-target-width');
-        }, 100);
-    });
-
     return card;
 }

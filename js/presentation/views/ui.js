@@ -1,9 +1,4 @@
 // عناصر واجهة مشتركة: تنبيهات، حوارات تأكيد، هيدر، أدوات مساعدة
-import { navigate } from '../../core/router.js';
-import { authState } from '../../core/authState.js';
-import { auth } from '../../core/firebase.js';
-import { signOut } from '../../core/firebase-sdk.js';
-import { APP_NAME } from '../../core/config.js';
 
 export function escapeHtml(value) {
     return String(value ?? '')
@@ -12,6 +7,12 @@ export function escapeHtml(value) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
+}
+
+// إظهار الحفظ القليل دون تقريبه إلى صفر في واجهة الطالب.
+export function formatProgress(value) {
+    const safe = Math.max(0, Math.min(100, Number(value) || 0));
+    return safe > 0 && safe < 1 ? safe.toFixed(2) : String(Math.round(safe));
 }
 
 /* ---------------------------------- تنبيهات ---------------------------------- */
@@ -39,8 +40,9 @@ export function toast(message, type = 'info') {
 /* ------------------------------- حوار التأكيد ------------------------------- */
 
 // حوار تأكيد يعيد Promise<boolean>؛ requireText يطلب كتابة نص مطابق قبل التفعيل (للحذف الخطير)
-export function confirmDialog({ title, message, confirmText = 'تأكيد', cancelText = 'إلغاء', danger = false, requireText = null }) {
+export function confirmDialog({ signal, title, message, confirmText = 'تأكيد', cancelText = 'إلغاء', danger = false, requireText = null }) {
     return new Promise(resolve => {
+        if (signal?.aborted) { resolve(null); return; }
         const previouslyFocused = document.activeElement;
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -75,10 +77,13 @@ export function confirmDialog({ title, message, confirmText = 'تأكيد', canc
         const close = result => {
             overlay.remove();
             document.removeEventListener('keydown', onKeydown);
+            signal?.removeEventListener('abort', onAbort);
             if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
             resolve(result);
         };
-        const onKeydown = e => { if (e.key === 'Escape') close(false); };
+        const onAbort = () => close(false);
+        const onKeydown = e => { if (e.key === 'Escape') close(false); else trapModalFocus(e, overlay); };
+        signal?.addEventListener('abort', onAbort, { once: true });
         document.addEventListener('keydown', onKeydown);
         confirmBtn.addEventListener('click', () => close(true));
         cancelBtn.addEventListener('click', () => close(false));
@@ -87,8 +92,9 @@ export function confirmDialog({ title, message, confirmText = 'تأكيد', canc
 }
 
 // حوار إدخال نص بسيط (مثل إعادة تسمية طالب)
-export function promptDialog({ title, label, value = '', confirmText = 'حفظ' }) {
+export function promptDialog({ signal, title, label, value = '', confirmText = 'حفظ' }) {
     return new Promise(resolve => {
+        if (signal?.aborted) { resolve(null); return; }
         const previouslyFocused = document.activeElement;
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
@@ -111,10 +117,13 @@ export function promptDialog({ title, label, value = '', confirmText = 'حفظ' 
         const close = result => {
             overlay.remove();
             document.removeEventListener('keydown', onKeydown);
+            signal?.removeEventListener('abort', onAbort);
             if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus();
             resolve(result);
         };
-        const onKeydown = e => { if (e.key === 'Escape') close(null); };
+        const onAbort = () => close(null);
+        const onKeydown = e => { if (e.key === 'Escape') close(null); else trapModalFocus(e, overlay); };
+        signal?.addEventListener('abort', onAbort, { once: true });
         document.addEventListener('keydown', onKeydown);
         const submit = () => {
             const text = input.value.trim();
@@ -130,48 +139,14 @@ export function promptDialog({ title, label, value = '', confirmText = 'حفظ' 
 /* --------------------------------- الهيدر --------------------------------- */
 
 // الهيدر الكبير (الصفحات العامة): نفس تصميم البانر الحالي مع فتحة لشريط إنجاز الفصل
-export function bannerHeader({ title, subtitle = '', extraHtml = '' }) {
+export function bannerHeader({ title, subtitle = '', extraHtml = '', className = '' }) {
     return `
-        <header>
+        <header class="${escapeHtml(className)}">
             <div class="header-icon"></div>
             <h1 class="banner-title">${escapeHtml(title)}</h1>
             ${subtitle ? `<div class="banner-separator"></div><div class="banner-subtitle">${escapeHtml(subtitle)}</div>` : ''}
             ${extraHtml}
         </header>`;
-}
-
-// شريط علوي مدمج لصفحات الإدارة مع شريحة الحساب
-export function topbar(active = '') {
-    const user = authState.user();
-    const displayName = user ? (user.displayName || user.email || '') : '';
-    return `
-        <nav class="topbar">
-            <a href="/" class="topbar-brand">
-                <span class="topbar-icon"></span>
-                <span class="topbar-title">${APP_NAME}</span>
-            </a>
-            <div class="topbar-links">
-                ${user ? `
-                    <a href="/dashboard" class="topbar-link ${active === 'dashboard' ? 'active' : ''}">لوحاتي</a>
-                    <span class="account-chip" title="${escapeHtml(user.email || '')}">${escapeHtml(displayName)}</span>
-                    <button class="topbar-link topbar-signout" id="topbarSignOut">خروج</button>
-                ` : `
-                    <a href="/login" class="topbar-link ${active === 'login' ? 'active' : ''}">دخول المعلمين</a>
-                `}
-            </div>
-        </nav>`;
-}
-
-// يربط زر الخروج بعد إدراج الشريط العلوي في الصفحة
-export function bindTopbar(container) {
-    const signOutBtn = container.querySelector('#topbarSignOut');
-    if (signOutBtn) {
-        signOutBtn.addEventListener('click', async () => {
-            await signOut(auth);
-            toast('تم تسجيل الخروج');
-            navigate('/');
-        });
-    }
 }
 
 /* -------------------------------- أدوات عامة -------------------------------- */
@@ -199,14 +174,15 @@ export async function copyToClipboard(text) {
     }
 }
 
-export function formatDate(date) {
-    if (!date) return '';
-    const d = date.toDate ? date.toDate() : new Date(date);
-    if (isNaN(d.getTime())) return '';
-    return new Intl.DateTimeFormat('ar', { year: 'numeric', month: 'long', day: 'numeric' }).format(d);
-}
-
 // رابط المشاركة العام للوحة
 export function boardShareUrl(boardId) {
     return `${location.origin}/b/${boardId}`;
+}
+
+function trapModalFocus(event, overlay) {
+    if (event.key !== 'Tab') return;
+    const controls = [...overlay.querySelectorAll('button:not(:disabled), input:not(:disabled), a[href], [tabindex="0"]')];
+    const first = controls[0], last = controls.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
 }

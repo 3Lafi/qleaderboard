@@ -1,0 +1,1085 @@
+/* ==========================================================================
+   مضمار السباق القرآني — Race Map Stylesheet for Wisam Student Page Preview
+   ========================================================================== */
+
+:root {
+    --race-track-bg: #15332a;
+    --race-track-border: #245747;
+    --race-curb-red: #d32f2f;
+    --race-curb-white: #ffffff;
+    --race-curb-gold: #e5b342;
+    --race-curb-green: #1a5947;
+    --race-gold-glow: rgba(229, 179, 66, 0.4);
+    --race-green-glow: rgba(33, 102, 83, 0.5);
+    --station-size: 76px;
+    --station-size-sm: 62px;
+}
+
+/* ----------------- حاوية المعاينة العامة ----------------- */
+.race-preview-body {
+    background-color: #0b1a15;
+    background-image:
+        radial-gradient(circle at 15% 20%, rgba(33, 102, 83, 0.25) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(229, 179, 66, 0.15) 0%, transparent 50%),
+        linear-gradient(180deg, #0d1e18 0%, #08120e 100%);
+    color: #f1f7f4;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", "Amiri", sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    direction: rtl;
+}
+
+.race-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 16px 80px;
+}
+
+/* ----------------- شريط التحكم التجريبي (Simulator Bar) ----------------- */
+.sim-controls-panel {
+    background: rgba(18, 50, 41, 0.85);
+    backdrop-filter: blur(14px);
+    border: 1px solid rgba(229, 179, 66, 0.25);
+    border-radius: 18px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.sim-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sim-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sim-title h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #fce79f;
+    letter-spacing: -0.5px;
+}
+
+.sim-badge {
+    background: linear-gradient(135deg, #d32f2f, #b71c1c);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 99px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(211, 47, 47, 0.4);
+}
+
+.sim-notice {
+    font-size: 0.84rem;
+    color: #a4c2b7;
+}
+
+.sim-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    align-items: center;
+}
+
+.sim-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.sim-control-group label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #c9ded5;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sim-btn-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.sim-btn {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e0eee7;
+    padding: 7px 14px;
+    border-radius: 99px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sim-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border-color: rgba(229, 179, 66, 0.5);
+}
+
+.sim-btn.is-active {
+    background: linear-gradient(135deg, #e5b342, #b8861e);
+    color: #0b1a15;
+    font-weight: 800;
+    border-color: #fce79f;
+    box-shadow: 0 2px 10px rgba(229, 179, 66, 0.35);
+}
+
+.sim-select {
+    background: #0d2720;
+    border: 1px solid #285e4e;
+    color: #f1f7f4;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+}
+
+.sim-select:focus {
+    border-color: #e5b342;
+    box-shadow: 0 0 0 3px rgba(229, 179, 66, 0.25);
+}
+
+/* ----------------- مفتاح التبديل بين الخرائط الثلاث (The 3 Maps Switcher) ----------------- */
+.maps-tab-bar {
+    display: flex;
+    background: rgba(14, 38, 31, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 6px;
+    margin-bottom: 24px;
+    gap: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.map-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 13px 18px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: #a4c2b7;
+    font-family: inherit;
+    font-size: 0.98rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.map-tab-btn:hover {
+    color: #f1f7f4;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.map-tab-btn.is-active {
+    background: linear-gradient(135deg, #1b5343 0%, #123d31 100%);
+    color: #ffffff;
+    border: 1px solid rgba(229, 179, 66, 0.4);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(229, 179, 66, 0.2);
+}
+
+.map-tab-btn.is-active .tab-icon {
+    transform: scale(1.18);
+}
+
+.tab-icon {
+    font-size: 1.25rem;
+    transition: transform 0.2s ease;
+}
+
+.tab-badge-count {
+    background: rgba(0, 0, 0, 0.3);
+    color: #e5b342;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 800;
+}
+
+/* ----------------- لوحة قيادة السباق (Racer Dashboard) ----------------- */
+.race-dashboard {
+    background: linear-gradient(135deg, rgba(21, 56, 46, 0.95), rgba(12, 36, 29, 0.95));
+    border: 1px solid rgba(229, 179, 66, 0.3);
+    border-radius: 20px;
+    padding: 20px 24px;
+    margin-bottom: 26px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+.race-dashboard::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: repeating-linear-gradient(90deg, #d32f2f 0 14px, #ffffff 14px 28px, #1a5947 28px 42px);
+}
+
+.racer-info {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.racer-avatar-badge {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffd56b, #b8861e);
+    border: 3px solid #fce79f;
+    box-shadow: 0 6px 18px rgba(229, 179, 66, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    position: relative;
+    animation: racerBob 3s ease-in-out infinite alternate;
+}
+
+@keyframes racerBob {
+    0% { transform: translateY(0) scale(1); }
+    100% { transform: translateY(-4px) scale(1.04); }
+}
+
+.racer-rank-badge {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    background: #123f35;
+    color: #ffd56b;
+    border: 2px solid #ffd56b;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 0.72rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.racer-details h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: #ffffff;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.racer-details p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #a4c2b7;
+}
+
+.race-gauge-cluster {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+    flex-wrap: wrap;
+}
+
+.speedometer {
+    text-align: center;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 10px 18px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.speedo-val {
+    display: block;
+    font-size: 2rem;
+    font-weight: 900;
+    color: #ffd56b;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 2px 10px rgba(255, 213, 107, 0.4);
+}
+
+.speedo-label {
+    display: block;
+    font-size: 0.72rem;
+    color: #92b5a7;
+    margin-top: 4px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.race-meter-container {
+    width: 220px;
+}
+
+.race-meter-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #a4c2b7;
+    margin-bottom: 6px;
+}
+
+.race-meter-track {
+    height: 12px;
+    background: #081a14;
+    border-radius: 99px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.race-meter-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #1b5e20, #4caf50, #ffd56b);
+    border-radius: 99px;
+    transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+    position: relative;
+}
+
+.race-meter-fill::after {
+    content: '🏎️';
+    position: absolute;
+    right: -10px;
+    top: -6px;
+    font-size: 14px;
+}
+
+.race-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.race-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e0eee7;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.race-action-btn:hover {
+    background: rgba(229, 179, 66, 0.15);
+    border-color: #ffd56b;
+    color: #ffd56b;
+    transform: translateY(-2px);
+}
+
+.race-action-btn.btn-primary {
+    background: linear-gradient(135deg, #e5b342, #b8861e);
+    border-color: #ffd56b;
+    color: #0b1a15;
+    box-shadow: 0 4px 14px rgba(229, 179, 66, 0.3);
+}
+
+.race-action-btn.btn-primary:hover {
+    background: linear-gradient(135deg, #ffd56b, #c99324);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(229, 179, 66, 0.5);
+}
+
+/* ----------------- مضمار السباق الرئيسي (Circuit Track Canvas / Wrapper) ----------------- */
+.circuit-card {
+    background: radial-gradient(circle at 50% 0%, #173d32 0%, #0d241d 80%, #081712 100%);
+    border: 2px solid #2b6151;
+    border-radius: 28px;
+    padding: 34px 28px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 2px 6px rgba(255, 255, 255, 0.1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* نمط حلبة السباق في الخلفية */
+.circuit-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+        radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        repeating-linear-gradient(45deg, rgba(33, 102, 83, 0.03) 0, rgba(33, 102, 83, 0.03) 20px, transparent 20px, transparent 40px);
+    background-size: 24px 24px, 40px 40px;
+    pointer-events: none;
+}
+
+/* عنوان الخريطة الحالية والتوجيهات */
+.circuit-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+    position: relative;
+    z-index: 2;
+}
+
+.circuit-header h3 {
+    margin: 0;
+    font-size: 1.45rem;
+    font-weight: 900;
+    color: #f7edd2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.circuit-header p {
+    margin: 6px 0 0;
+    font-size: 0.88rem;
+    color: #a4c2b7;
+}
+
+.circuit-legend {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(0, 0, 0, 0.35);
+    padding: 8px 16px;
+    border-radius: 99px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    font-size: 0.78rem;
+    color: #c9ded5;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.legend-dot.done { background: #4caf50; box-shadow: 0 0 8px #4caf50; }
+.legend-dot.current { background: #ffd56b; box-shadow: 0 0 10px #ffd56b; animation: pulseLegend 1.5s infinite; }
+.legend-dot.locked { background: #455a64; }
+
+@keyframes pulseLegend {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.4); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ----------------- مسار المضمار المتعرج (Serpentine Circuit Track) ----------------- */
+.circuit-track-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 40px;
+    position: relative;
+    z-index: 2;
+    padding: 10px 0 30px;
+}
+
+/* صف المضمار الواحد */
+.circuit-row {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding: 16px 18px;
+    background: linear-gradient(180deg, #112921 0%, #0c201a 100%);
+    border-radius: 40px;
+    border: 2px solid #1e4a3c;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.05);
+}
+
+/* حواف وأرصفة السباق (Racing Curbs) أعلى وأسفل كل صف */
+.circuit-row::before,
+.circuit-row::after {
+    content: '';
+    position: absolute;
+    left: 24px;
+    right: 24px;
+    height: 6px;
+    border-radius: 99px;
+    background: repeating-linear-gradient(90deg,
+        var(--race-curb-red) 0 18px,
+        var(--race-curb-white) 18px 36px
+    );
+    opacity: 0.85;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.circuit-row::before { top: 3px; }
+.circuit-row::after { bottom: 3px; }
+
+/* خط المركز المتقطع للمضمار */
+.circuit-row-centerline {
+    position: absolute;
+    left: 40px;
+    right: 40px;
+    top: 50%;
+    height: 2px;
+    transform: translateY(-50%);
+    background: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 16px, transparent 16px 30px);
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* اتجاه الصفوف: صف عادي وصف معكوس لإعطاء شكل المسار المتعرج المتصل (Serpentine Snake Track) */
+.circuit-row.is-rtl { flex-direction: row; }
+.circuit-row.is-ltr { flex-direction: row-reverse; }
+
+/* منحنى الدوران بين الصفوف (Turn Bends / Connectors) */
+.circuit-row-bend {
+    position: absolute;
+    width: 60px;
+    height: calc(100% + 42px);
+    border: 8px solid #1e4a3c;
+    border-radius: 36px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.circuit-row.turn-left .circuit-row-bend {
+    left: -28px;
+    top: 50%;
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-color: #1e4a3c;
+}
+
+.circuit-row.turn-right .circuit-row-bend {
+    right: -28px;
+    top: 50%;
+    border-left: none;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-color: #1e4a3c;
+}
+
+/* محطات السباق داخل الصف */
+.stations-lane {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+/* محطة توقف واحدة (Race Station) */
+.race-station {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    padding: 8px 10px;
+    flex-grow: var(--gap-weight, 1);
+}
+
+.race-station:hover {
+    transform: scale(1.08);
+}
+
+.race-station:focus-visible {
+    outline: none;
+}
+
+.race-station:focus-visible .station-node {
+    box-shadow: 0 0 0 4px #ffd56b;
+}
+
+/* جسم المحطة (الدائرة + الوسام) */
+.station-node {
+    width: var(--station-size);
+    height: var(--station-size);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 35% 30%, #1f473c, #0f241d);
+    border: 3px solid #2d6150;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.station-node img {
+    width: 76%;
+    height: 76%;
+    object-fit: contain;
+    filter: brightness(0) invert(1) opacity(0.55);
+    transition: all 0.3s ease;
+}
+
+/* تفاصيل المحطة تحتها (الاسم والآيات) */
+.station-info {
+    text-align: center;
+    margin-top: 8px;
+    max-width: 96px;
+    transition: all 0.25s ease;
+}
+
+.station-name {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #e2ede8;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.station-meta {
+    display: block;
+    font-size: 0.72rem;
+    color: #8daea1;
+    margin-top: 2px;
+}
+
+/* ================= حالات المحطات المختلفة ================= */
+
+/* 1. المحطة المكتملة (Done Station) */
+.race-station.is-done .station-node {
+    background: radial-gradient(circle at 35% 30%, #2e7d32, #1b5e20);
+    border-color: #ffd56b;
+    box-shadow: 0 6px 20px rgba(76, 175, 80, 0.4), 0 0 0 2px rgba(255, 213, 107, 0.3);
+}
+
+.race-station.is-done .station-node img {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.4));
+    transform: scale(1.05);
+}
+
+.race-station.is-done .station-name {
+    color: #ffffff;
+}
+
+.station-check-badge {
+    position: absolute;
+    bottom: -3px;
+    right: -3px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd56b, #b8861e);
+    border: 2px solid #ffffff;
+    color: #0b1a15;
+    font-size: 0.75rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* 2. المحطة الحالية (Current Station / Racer Location) */
+.race-station.is-current .station-node {
+    border-color: #ffd56b;
+    box-shadow: 0 0 0 6px rgba(255, 213, 107, 0.3), 0 0 25px rgba(255, 213, 107, 0.6);
+    background: radial-gradient(circle at 35% 30%, #3a7563, #1f473c);
+    transform: scale(1.12);
+    animation: stationPulse 2s infinite alternate;
+}
+
+@keyframes stationPulse {
+    0% { box-shadow: 0 0 0 4px rgba(255, 213, 107, 0.3), 0 0 15px rgba(255, 213, 107, 0.4); }
+    100% { box-shadow: 0 0 0 8px rgba(255, 213, 107, 0.5), 0 0 30px rgba(255, 213, 107, 0.8); }
+}
+
+.race-station.is-current .station-name {
+    color: #ffd56b;
+    font-weight: 900;
+}
+
+/* لافتة المتسابق فوق المحطة الحالية (Racer Token Banner) */
+.racer-location-marker {
+    position: absolute;
+    top: -46px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 10;
+    pointer-events: none;
+    animation: markerFloat 2s ease-in-out infinite alternate;
+}
+
+@keyframes markerFloat {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-6px); }
+}
+
+.marker-pill {
+    background: linear-gradient(135deg, #ffd56b, #e5a420);
+    color: #0b1a15;
+    font-size: 0.72rem;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 99px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    border: 1.5px solid #ffffff;
+}
+
+.marker-pointer {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 7px solid #e5a420;
+}
+
+/* 3. المحطة الجزئية (Partial Station - في خريطة الأجزاء) */
+.race-station.is-partial .station-node {
+    border-color: #4caf50;
+    background: radial-gradient(circle at 35% 30%, #205c48, #13392d);
+    box-shadow: 0 4px 14px rgba(76, 175, 80, 0.25);
+}
+
+.race-station.is-partial .station-node img {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.station-partial-progress {
+    position: absolute;
+    bottom: -5px;
+    background: #11382d;
+    border: 1px solid #4caf50;
+    color: #81c784;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 1px 6px;
+    border-radius: 99px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* 4. خط الانطلاق وخط النهاية (Start & Finish Lines) */
+.race-station.station-start .station-node {
+    border-color: #4caf50;
+}
+
+.start-flag-tag {
+    position: absolute;
+    top: -24px;
+    background: #2e7d32;
+    color: #ffffff;
+    font-size: 0.68rem;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 6px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.race-station.station-finish .station-node {
+    border-color: #ffd56b;
+}
+
+.finish-arch-tag {
+    position: absolute;
+    top: -30px;
+    background: #111111;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 900;
+    padding: 3px 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), 0 0 15px rgba(255, 213, 107, 0.4);
+    border: 2px solid #ffd56b;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.finish-arch-tag span {
+    background: #ffd56b;
+    color: #0b1a15;
+    padding: 1px 5px;
+    border-radius: 4px;
+}
+
+/* ----------------- نافذة تفاصيل المحطة (Pit Stop Modal) ----------------- */
+.pitstop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 12, 9, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+}
+
+.pitstop-overlay.is-open {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.pitstop-dialog {
+    background: linear-gradient(145deg, #163a30, #0f2922);
+    border: 2px solid #ffd56b;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 440px;
+    padding: 28px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7), 0 0 30px rgba(229, 179, 66, 0.2);
+    position: relative;
+    transform: translateY(20px) scale(0.95);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pitstop-overlay.is-open .pitstop-dialog {
+    transform: translateY(0) scale(1);
+}
+
+.pitstop-close {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #c9ded5;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.pitstop-close:hover {
+    background: rgba(211, 47, 47, 0.4);
+    color: #ffffff;
+}
+
+.pitstop-header {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-bottom: 20px;
+}
+
+.pitstop-badge-art {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #ffd56b, #b8861e);
+    border: 3px solid #fce79f;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+}
+
+.pitstop-badge-art img {
+    width: 78%;
+    height: 78%;
+    object-fit: contain;
+}
+
+.pitstop-titles h3 {
+    margin: 0;
+    font-size: 1.45rem;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.pitstop-titles p {
+    margin: 4px 0 0;
+    font-size: 0.85rem;
+    color: #ffd56b;
+    font-weight: 600;
+}
+
+.pitstop-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-bottom: 22px;
+}
+
+.pitstop-stat-box {
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 12px;
+    text-align: center;
+}
+
+.pitstop-stat-val {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fce79f;
+}
+
+.pitstop-stat-lbl {
+    display: block;
+    font-size: 0.72rem;
+    color: #92b5a7;
+    margin-top: 2px;
+}
+
+.pitstop-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pitstop-toggle-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 14px;
+    border: none;
+    font-family: inherit;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.25s ease;
+}
+
+.pitstop-toggle-btn.is-mark-done {
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    color: #ffffff;
+    box-shadow: 0 4px 16px rgba(76, 175, 80, 0.4);
+}
+
+.pitstop-toggle-btn.is-mark-done:hover {
+    background: linear-gradient(135deg, #66bb6a, #388e3c);
+    transform: translateY(-2px);
+}
+
+.pitstop-toggle-btn.is-mark-undo {
+    background: rgba(211, 47, 47, 0.25);
+    border: 1px solid #d32f2f;
+    color: #ef9a9a;
+}
+
+.pitstop-toggle-btn.is-mark-undo:hover {
+    background: rgba(211, 47, 47, 0.4);
+    color: #ffffff;
+}
+
+/* ----------------- تجاوب الشاشات الصغيرة (Mobile & Tablet) ----------------- */
+@media (max-width: 840px) {
+    :root {
+        --station-size: 62px;
+    }
+
+    .race-dashboard {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+    }
+
+    .race-gauge-cluster {
+        justify-content: space-between;
+    }
+
+    .circuit-card {
+        padding: 22px 14px;
+        border-radius: 20px;
+    }
+
+    .circuit-row {
+        padding: 10px 8px;
+        border-radius: 28px;
+    }
+
+    .circuit-row-bend {
+        display: none;
+    }
+
+    .station-info {
+        max-width: 65px;
+    }
+
+    .station-name {
+        font-size: 0.76rem;
+    }
+
+    .station-meta {
+        font-size: 0.65rem;
+    }
+
+    .maps-tab-bar {
+        flex-direction: column;
+    }
+
+    .map-tab-btn {
+        justify-content: flex-start;
+        padding: 10px 14px;
+    }
+}
+
+@media (max-width: 640px) {
+    :root {
+        --station-size: 56px;
+    }
+    .station-info {
+        max-width: 80px;
+    }
+    .station-name {
+        font-size: 0.78rem;
+    }
+    .station-meta {
+        font-size: 0.65rem;
+    }
+    .circuit-card {
+        padding: 16px 10px;
+    }
+    .circuit-row {
+        padding: 12px 6px;
+    }
+}

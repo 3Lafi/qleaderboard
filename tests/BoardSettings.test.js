@@ -2,10 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultSettings, sanitizeSettings } from '../js/domain/models/BoardSettings.js';
 
-test('defaultSettings scope covers the whole quran', () => {
+test('defaultSettings starts with Juz Amma as the first program', () => {
     const s = defaultSettings();
-    assert.equal(s.scope.type, 'quran');
-    assert.equal(s.scope.surahNumbers.length, 114);
+    assert.equal(s.scope.type, 'juz');
+    assert.deepEqual(s.scope.juzNumbers, [30]);
+    assert.equal(s.scope.surahNumbers[0], 78);
+    assert.equal(s.scope.surahNumbers.at(-1), 114);
 });
 
 test('sanitizeSettings rejects an empty name', () => {

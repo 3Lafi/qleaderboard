@@ -1,0 +1,31 @@
+/* Shared Wisam design tokens. Component styles consume these variables. */
+:root {
+    --sidebar-width: 272px;
+    --nav-selected-bg: #eaf2ed;
+    --primary-dark: #123f35;
+    --primary-color: #216653;
+    --primary-light: #37856e;
+    --gold-text: #a86d2c;
+    --gold-light: #f9f1df;
+    --primary-gradient: linear-gradient(135deg, #2b725e, #174d3f);
+    --primary-gradient-hover: linear-gradient(135deg, #23614f, #103e31);
+    --gold-gradient: linear-gradient(135deg, #F9D976 0%, #AA862E 100%);
+    --gold-gradient-hover: linear-gradient(135deg, #AA862E 0%, #F9D976 100%);
+    --header-gradient: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+    --progress-gradient: var(--header-gradient);
+    --bg-color: #f8f9f6;
+    --card-bg: #fff;
+    --text-main: #233c33;
+    --text-muted: #5f7067;
+    --border-subtle: #dfe7e2;
+    --shadow-sm: 0 3px 12px #153e2905;
+    --shadow-md: 0 10px 30px #153e2909;
+    --shadow-hover: 0 15px 40px rgba(15, 98, 70, 0.12);
+    --shadow-gold: 0 15px 40px rgba(212, 175, 55, 0.15);
+    --meta-text: #5f7067;
+    --surface: #ffffff;
+    --surface-muted: #f1f5f2;
+    --radius-control: 10px;
+    --radius-panel: 16px;
+    --shadow-panel: 0 4px 18px #173f2c05;
+}

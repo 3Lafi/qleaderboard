@@ -1,15 +1,29 @@
 // طالب داخل لوحة: يحسب نسبة الحفظ موزونة بعدد الآيات والخط الزمني للسور
-import { surahName, surahAyahs } from '../../core/quran-data.js';
+import { surahName, surahAyahs } from '../../shared/quran-data.js';
 
 export class Student {
-    constructor(id, data, orderedScopeSurahs) {
+    constructor(id, data, orderedScopeSurahs, priorSurahs = []) {
         this.id = id;
         this.name = data.name || '';
         this.memorized = data.memorized || [];
+        // سور من برامج أنهىها الطالب سابقاً: تُحتسب للأوسمة ولا تُحتسب لتقدم الخطة الحالية
+        this.priorSurahs = Array.isArray(data.priorSurahs) || Array.isArray(priorSurahs)
+            ? [...new Set([...(data.priorSurahs || []), ...(priorSurahs || [])])].filter(n => Number.isInteger(n) && n >= 1 && n <= 114).sort((a, b) => a - b)
+            : [];
         this.completedDate = data.completedDate || null;
         this.createdAt = data.createdAt || null;
         // ترتيب السور ضمن النطاق باتجاه الحفظ المعتمد في إعدادات اللوحة
         this.scope = orderedScopeSurahs || [];
+    }
+
+    // كل ما يُحتسب للأوسمة: حفظ البرنامج الحالي + ما ثبت من برامج سابقة
+    get effectiveMemorized() {
+        return [...new Set([...this.memorized, ...this.priorSurahs])].sort((a, b) => a - b);
+    }
+
+    get priorInScopeCount() {
+        const scopeSet = new Set(this.scope);
+        return this.priorSurahs.filter(n => scopeSet.has(n)).length;
     }
 
     get memorizedInScope() {

@@ -1,0 +1,94 @@
+js/core/router.js
+js/presentation/layout/AppHeaderView.js
+js/presentation/layout/BreadcrumbsView.js
+js/presentation/layout/TopbarView.js
+js/presentation/app.js
+js/presentation/controllers/DashboardController.js
+js/presentation/views/DashboardView.js
+js/data/api/GoogleSheetsApi.js
+js/data/repositories/CurriculumRepository.js
+js/domain/usecases/GetCurriculumData.js
+almanhaj.html
+juz_amma.html
+juz_tabarak.html
+js/domain/usecases/ClassProgress.js
+js/presentation/views/ClassProgressView.js
+js/presentation/views/ProfileLeaderboardView.js
+scripts/build-badge-alternative.mjs
+scripts/build-fitted-badge.mjs
+scripts/recolor-level1-frame.mjs
+images/badge-concepts/wisam-achievement-badges-concept-sheet-v2.png
+images/badge-concepts/wisam-achievement-badges-concept-sheet.png
+images/badge-concepts/wisam-achievement-badges-crown-inlay-v5.png
+images/badge-concepts/wisam-achievement-badges-integrated-crown-v4.png
+images/badge-concepts/wisam-achievement-badges-unified-crown-book-v3.png
+images/badge-concepts/quran-geometric-v6.svg
+images/badge-concepts/quran-geometric-v6.png
+images/badge-concepts/quran-geometric-v6.webp
+images/badge-concepts/quran-geometric-v7.svg
+images/badge-concepts/quran-geometric-v7.png
+images/badge-concepts/quran-geometric-v7.webp
+images/badge-concepts/quran-geometric-v8.svg
+images/badge-concepts/quran-geometric-v8.png
+images/badge-concepts/quran-geometric-v8.webp
+images/badge-concepts/quran-geometric-v9.svg
+images/badge-concepts/quran-geometric-v9.webp
+images/badge-concepts/quran-geometric-v9.png
+images/badges-assets/frames/emerald-3d.png
+images/badges-assets/frames/juz-3d.png
+images/badges-assets/frames/juz-faceted-v4.png
+images/badges-assets/frames/juz-modern-v2.png
+images/badges-assets/frames/juz-unified-v3.png
+images/badges-assets/frames/quran-faceted-v4.png
+images/badges-assets/frames/quran-modern-v2.png
+images/badges-assets/frames/quran-soft-v5.svg
+images/badges-assets/frames/quran-unified-v3.png
+images/badges-assets/frames/surah-3d.png
+images/badges-assets/frames/surah-faceted-v4.png
+images/badges-assets/frames/surah-modern-v2.png
+images/badges-assets/frames/surah-unified-v3.png
+images/badges-assets/frames/quran-soft-v5.png
+images/badges-assets/completion/program-crown-book-v3-source.png
+images/badges-assets/completion/program-crown-book-v3.webp
+images/badges-assets/completion/program-crown-book-v4.svg
+images/badges-assets/completion/program-crown-book-v5.svg
+images/badges-assets/completion/program-crown-v1-source.png
+images/badges-assets/completion/program-crown-v1.webp
+images/badges-assets/completion/program-crown-v2-source.png
+images/badges-assets/completion/program-crown-v2.webp
+images/badges-assets/sources/quran-soft-v5.png
+images/badges-assets/sources/quran-soft-v5-backup-emerald-face.png
+images/badges-assets/sources/quran-geometric-v6.png
+images/badges-assets/sources/quran-geometric-v7.png
+images/badges-assets/sources/quran-geometric-v8.png
+images/app-icons/badge-v4-180.png
+images/app-icons/badge-v4-192.png
+images/app-icons/badge-v4-32.png
+images/app-icons/badge-v4-512.png
+images/app-icons/badge-v4-maskable-512.png
+images/app-icons/badge-v4-maskable.svg
+images/app-icons/badge-v4.svg
+images/app-icons/badge-v5-180.png
+images/app-icons/badge-v5-192.png
+images/app-icons/badge-v5-32.png
+images/app-icons/badge-v5-512.png
+images/app-icons/badge-v5.svg
+images/quran-icon.png
+images/og-amma.jpg
+images/og-almanhaj.jpg
+images/og-tabarak.jpg
+docs/badge-design-v5.md
+docs/badge-design-v6.md
+docs/badge-design-v7.md
+docs/badge-design-v8.md
+docs/badge-design-v9.md
+
+Removed assets and retired helpers: 65,197,995 bytes.
+tests/ui/navigation-checks.mjs (replaced by real-router regression tests and documented browser matrix)
+
+Navigation redesign cleanup (12 September 2026):
+tests/ui/sidebar-actions.mjs (tested retired inline editing/collapse controls)
+tests/ui/layout-audit.mjs (tested retired collapse mode)
+tests/ui/screenshots.mjs (captured retired sidebar filters and inline forms)
+Their navigation cases are replaced by tests/navigation-model.test.js and the current browser matrix in docs/audit/navigation-redesign/review.md.
+js/presentation/layout/BottomNavView.js (bottom navigation removed at the user's request; associated shell, CSS, tokens and handlers removed)

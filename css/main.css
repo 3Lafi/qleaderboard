@@ -5,44 +5,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
 
-:root {
-    /* Primary Colors - Richer Islamic Green */
-    --primary-dark: #07402e;
-    --primary-color: #0f6246;       
-    --primary-light: #20a075; 
-    
-    /* Golden Accents - New Brilliant Gold */
-    --gold-text: #AA862E;           
-    --gold-light: #f9f1df;
-    
-    /* Gradients REVERSED for buttons and general elements as requested */
-    --primary-gradient: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
-    --primary-gradient-hover: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
-    
-    --gold-gradient: linear-gradient(135deg, #F9D976 0%, #AA862E 100%);
-    --gold-gradient-hover: linear-gradient(135deg, #AA862E 0%, #F9D976 100%);
-    
-    --header-gradient: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
-    --progress-gradient: var(--header-gradient);
-
-    /* UI Colors */
-    --bg-color: #f4f9f7;
-    --card-bg: rgba(255, 255, 255, 0.98);
-    --text-main: #0c2b20;          
-    --text-muted: #4a6c5f;
-    --border-subtle: rgba(15, 98, 70, 0.08);
-
-    /* Shadows */
-    --shadow-sm: 0 4px 10px rgba(15, 98, 70, 0.04);
-    --shadow-md: 0 10px 30px rgba(15, 98, 70, 0.08);
-    --shadow-hover: 0 15px 40px rgba(15, 98, 70, 0.12);
-    --shadow-gold: 0 15px 40px rgba(212, 175, 55, 0.15);
-}
-
 * { 
     box-sizing: border-box; 
     -webkit-tap-highlight-color: transparent; 
-    font-family: 'Tajawal', sans-serif !important; 
+    font-family: 'Tajawal', sans-serif;
 }
 
 body {
@@ -70,7 +36,7 @@ body {
 }
 
 /* Header & Banner - Premium Glass/Glow */
-header {
+:is(.board-banner, .banner-preview) {
     width: 100%;
     min-height: 400px; /* Adjusted for Quran icon + text + Progress */
     margin-bottom: 40px;
@@ -90,7 +56,7 @@ header {
 }
 
 /* Golden Inner Border */
-header::after {
+:is(.board-banner, .banner-preview)::after {
     content: '';
     position: absolute;
     top: 20px; left: 20px; right: 20px; bottom: 20px;
@@ -114,7 +80,7 @@ header::after {
 }
 
 /* Decorative Header Pattern */
-header::before {
+:is(.board-banner, .banner-preview)::before {
     content: '';
     position: absolute;
     top: -50%; left: -50%; width: 200%; height: 200%;

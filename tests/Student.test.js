@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Student } from '../js/domain/models/Student.js';
-import { surahAyahs } from '../js/core/quran-data.js';
+import { surahAyahs } from '../js/shared/quran-data.js';
 
 test('progress is weighted by ayah count, not surah count', () => {
     // نطاق: الفاتحة (7 آيات) + الناس (6 آيات)؛ حفظ الفاتحة فقط لا يساوي 50%
@@ -33,4 +33,13 @@ test('isCompleted requires every surah in scope, not just some', () => {
     const scope = [1, 2, 3];
     assert.equal(new Student('s1', { name: 'ط', memorized: [1, 2] }, scope).isCompleted, false);
     assert.equal(new Student('s1', { name: 'ط', memorized: [1, 2, 3] }, scope).isCompleted, true);
+});
+
+test('a rounded 100 percent does not earn program completion', () => {
+    const scope = Array.from({ length: 114 }, (_, i) => i + 1);
+    const student = new Student('almost', { name: 'طالب', memorized: scope.filter(n => n !== 108) }, scope);
+    assert.equal(student.progressPercentage, 100);
+    assert.equal(student.isCompleted, false);
+    student.memorized.push(108);
+    assert.equal(student.isCompleted, true);
 });

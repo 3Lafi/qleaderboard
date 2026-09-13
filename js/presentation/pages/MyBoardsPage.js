@@ -1,13 +1,14 @@
 // لوحاتي: قائمة اللوحات الخاصة بالمعلم مع إجراءات سريعة
-import { authState } from '../../core/authState.js';
-import { BoardRepository } from '../../data/repositories/BoardRepository.js';
-import { topbar, bindTopbar, escapeHtml, confirmDialog, toast, boardShareUrl, copyToClipboard } from '../views/ui.js';
+import { escapeHtml } from '../views/ui.js';
+import { normalizeArabic } from '../../shared/text-utils.js';
+import { createFeedbackState } from '../layout/FeedbackStateView.js';
 
-export default async function MyBoardsPage(container, { navigate }) {
-    const user = authState.user();
+export default async function MyBoardsPage(container, { layout, user, services, setTitle, refresh }) {
+    const BoardRepository = services.boards;
+    setTitle('لوحاتي — وسام');
+    layout?.setActiveBoard(null);
 
     container.innerHTML = `
-        ${topbar('dashboard')}
         <div class="page-title-row">
             <div>
                 <h1 class="page-title">لوحاتي</h1>
@@ -19,7 +20,6 @@ export default async function MyBoardsPage(container, { navigate }) {
         </div>
         <div id="boardsHost">${skeletonBoards()}</div>
     `;
-    bindTopbar(container);
 
     const host = container.querySelector('#boardsHost');
 
@@ -28,49 +28,101 @@ export default async function MyBoardsPage(container, { navigate }) {
         boards = await BoardRepository.listMine(user.uid);
     } catch (err) {
         console.error(err);
-        host.innerHTML = `<div id="error-msg" style="display:block;"><p>يتعذر تحميل اللوحات حالياً.</p><button class="retry-btn" id="boardsRetryBtn">تحديث الصفحة</button></div>`;
-        host.querySelector('#boardsRetryBtn').addEventListener('click', () => location.reload());
+        host.replaceChildren(createFeedbackState({
+            headingLevel: 2,
+            type: 'error',
+            icon: '⚠️',
+            eyebrow: 'لوحاتي',
+            title: 'تعذر تحميل اللوحات',
+            message: 'يتعذر الاتصال بقاعدة البيانات حالياً. يرجى إعادة المحاولة.',
+            actions: [
+                { label: 'تحديث الصفحة', onClick: refresh, primary: true },
+                { label: 'الرئيسية', href: '/' }
+            ]
+        }));
         return;
     }
 
     if (boards.length === 0) {
-        host.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-emoji">📋</div>
-                <p class="empty-state-text">لا توجد لديك لوحات بعد.</p>
-                <a href="/new" class="btn btn-primary">إنشاء أول لوحة</a>
-            </div>`;
+        host.replaceChildren(createFeedbackState({
+            headingLevel: 2,
+            type: 'empty',
+            icon: '📋',
+            eyebrow: 'بداية جديدة',
+            title: 'لا توجد لديك لوحات بعد',
+            message: 'أنشئ أول لوحة لمتابعة حفظ طلابك والاحتفاء بإنجازاتهم.',
+            actions: [
+                { label: 'إنشاء أول لوحة', href: '/new', primary: true }
+            ]
+        }));
         return;
     }
 
-    host.innerHTML = `<div class="boards-grid">${boards.map(boardCardHtml).join('')}</div>`;
+    host.innerHTML = `
+        <section class="dashboard-stats" aria-label="ملخص لوحاتك">
+            <div><strong>${boards.length}</strong><span>لوحة</span></div>
+            <div><strong>${boards.reduce((sum, board) => sum + board.studentsCount(), 0)}</strong><span>طالب</span></div>
+            <div><strong>${boards.filter(board => board.settings.isPublic).length}</strong><span>لوحة عامة</span></div>
+        </section>
+        <div class="dashboard-tools">
+            <label class="badge-search">
+                <span>اللوحة</span>
+                <input type="search" id="boardSearch" aria-label="ابحث عن لوحة" placeholder="اسم اللوحة أو المدرسة…">
+            </label>
+            <div class="choice-pills" role="group" aria-label="ظهور اللوحات">
+                <button type="button" data-visibility="all" aria-pressed="true">الكل</button>
+                <button type="button" data-visibility="public" aria-pressed="false">العامة</button>
+                <button type="button" data-visibility="private" aria-pressed="false">الخاصة</button>
+            </div>
+            <span id="boardsResultCount" role="status" aria-live="polite"></span>
+        </div>
+        <div class="boards-grid" id="boardsGrid"></div>
+    `;
 
-    host.querySelectorAll('[data-copy]').forEach(btn => {
-        btn.addEventListener('click', () => copyToClipboard(boardShareUrl(btn.dataset.copy)));
-    });
+    let visibility = 'all';
+    const search = host.querySelector('#boardSearch');
+    const grid = host.querySelector('#boardsGrid');
 
-    host.querySelectorAll('[data-delete]').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            const boardId = btn.dataset.delete;
-            const boardName = btn.dataset.name;
-            const ok = await confirmDialog({
-                title: 'حذف اللوحة',
-                message: `سيتم حذف لوحة "${boardName}" وجميع بيانات الطلاب فيها نهائياً. لا يمكن التراجع عن هذا الإجراء.`,
-                confirmText: 'حذف نهائياً',
-                danger: true,
-                requireText: boardName,
-            });
-            if (!ok) return;
-            try {
-                await BoardRepository.delete(boardId);
-                toast('تم حذف اللوحة', 'success');
-                navigate('/dashboard');
-            } catch (err) {
-                console.error(err);
-                toast('تعذر حذف اللوحة', 'error');
-            }
+    function renderBoards() {
+        const term = normalizeArabic(search.value).trim();
+        const matches = boards.filter(board => {
+            const s = board.settings;
+            return (visibility === 'all' || s.isPublic === (visibility === 'public')) &&
+                normalizeArabic([s.name, s.schoolName, s.classLabel].filter(Boolean).join(' ')).includes(term);
         });
-    });
+
+        host.querySelector('#boardsResultCount').textContent = `${matches.length} من ${boards.length} لوحة`;
+        grid.innerHTML = matches.length
+            ? matches.map(boardCardHtml).join('')
+            : `<div class="empty-search">
+                   <h2>لا توجد لوحات مطابقة</h2>
+                   <p>غيّر كلمات البحث أو اعرض كل اللوحات.</p>
+                   <button type="button" class="btn btn-secondary" id="resetBoardSearch">مسح البحث والتصفية</button>
+               </div>`;
+
+        grid.querySelector('#resetBoardSearch')?.addEventListener('click', () => {
+            search.value = '';
+            visibility = 'all';
+            updateFilter();
+            renderBoards();
+            search.focus();
+        });
+    }
+
+    function updateFilter() {
+        host.querySelectorAll('[data-visibility]').forEach(button =>
+            button.setAttribute('aria-pressed', String(button.dataset.visibility === visibility))
+        );
+    }
+
+    search.addEventListener('input', renderBoards);
+    host.querySelectorAll('[data-visibility]').forEach(button => button.addEventListener('click', () => {
+        visibility = button.dataset.visibility;
+        updateFilter();
+        renderBoards();
+    }));
+
+    renderBoards();
 }
 
 function boardCardHtml(board) {
@@ -78,18 +130,16 @@ function boardCardHtml(board) {
     return `
         <div class="board-card">
             <span class="badge-visibility ${s.isPublic ? 'badge-public' : 'badge-private'}">${s.isPublic ? 'عامة' : 'خاصة'}</span>
-            <h2 class="board-card-title">${escapeHtml(s.name || 'بدون اسم')}</h2>
+            <h2 class="board-card-title"><a href="/edit/${board.id}/students">${escapeHtml(s.name || 'بدون اسم')}</a></h2>
             <div class="board-meta">
-                ${s.schoolName ? `<span>🏫 ${escapeHtml(s.schoolName)}</span>` : ''}
-                ${s.classLabel ? `<span>👥 ${escapeHtml(s.classLabel)}</span>` : ''}
-                <span>👤 ${board.studentsCount()} طالب</span>
+                ${s.schoolName ? `<span>${escapeHtml(s.schoolName)}</span>` : ''}
+                ${s.classLabel ? `<span>${escapeHtml(s.classLabel)}</span>` : ''}
+                <span>${board.studentsCount()} طالب</span>
             </div>
             <div class="board-actions">
-                <a href="/b/${board.id}" class="btn btn-secondary btn-sm">عرض</a>
-                <a href="/edit/${board.id}/students" class="btn btn-secondary btn-sm">الطلاب</a>
-                <a href="/edit/${board.id}" class="btn btn-secondary btn-sm">الإعدادات</a>
-                <button class="btn btn-primary btn-sm" data-copy="${board.id}">نسخ الرابط</button>
-                <button class="btn btn-danger btn-sm" data-delete="${board.id}" data-name="${escapeHtml(s.name)}">حذف</button>
+                <a href="/edit/${board.id}/students" class="btn btn-primary btn-sm">جدول المتابعة</a>
+                ${s.isPublic ? `<a href="/b/${board.id}" class="btn btn-secondary btn-sm">عرض اللوحة</a>` : ''}
+                <a href="/edit/${board.id}" class="board-settings-link">إعدادات اللوحة <span aria-hidden="true">←</span></a>
             </div>
         </div>`;
 }

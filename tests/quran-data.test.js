@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { expandScope, SURAHS, surahsInJuz } from '../js/core/quran-data.js';
+import { expandScope, SURAHS, surahsInJuz } from '../js/shared/quran-data.js';
 
 test('quran scope returns all 114 surahs in mushaf order', () => {
     const nums = expandScope({ type: 'quran' });

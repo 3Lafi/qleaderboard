@@ -1,12 +1,12 @@
 // طبقة الوصول الوحيدة إلى Firestore لمستند اللوحات
-import { db } from '../../core/firebase.js';
+import { db } from '../firebase/firebase.js';
 import {
     collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField,
     query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove,
-} from '../../core/firebase-sdk.js';
+} from '../firebase/firebase-sdk.js';
 import { Leaderboard } from '../../domain/models/Leaderboard.js';
 import { sanitizeSettings } from '../../domain/models/BoardSettings.js';
-import { LIMITS } from '../../core/config.js';
+import { LIMITS } from '../../shared/config.js';
 
 const COLLECTION = 'leaderboards';
 
@@ -69,7 +69,16 @@ export const BoardRepository = {
         await deleteDoc(boardRef(boardId));
     },
 
-    async addStudent(boardId, name, currentCount) {
+    // محتسب سابقاً لطالب واحد (انتقال من برنامج آخر) — أرقام سور فقط
+    async setStudentPrior(boardId, studentId, surahNumbers = []) {
+        const clean = [...new Set(surahNumbers.map(Number).filter(n => Number.isInteger(n) && n >= 1 && n <= 114))].sort((a, b) => a - b);
+        await updateDoc(boardRef(boardId), {
+            [`students.${studentId}.priorSurahs`]: clean,
+            updatedAt: serverTimestamp(),
+        });
+    },
+
+    async addStudent(boardId, name, currentCount, { cohortStudentId = '' } = {}) {
         if (currentCount >= LIMITS.MAX_STUDENTS_PER_BOARD) {
             throw new Error(`لا يمكن تجاوز ${LIMITS.MAX_STUDENTS_PER_BOARD} طالباً في اللوحة الواحدة.`);
         }
@@ -80,6 +89,7 @@ export const BoardRepository = {
                 memorized: [],
                 completedDate: null,
                 createdAt: serverTimestamp(),
+                ...(cohortStudentId ? { cohortStudentId: String(cohortStudentId) } : {}),
             },
             updatedAt: serverTimestamp(),
         });

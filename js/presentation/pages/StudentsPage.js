@@ -1,229 +1,474 @@
-// إدارة الطلاب: إضافة سريعة + تسجيل الحفظ بلمسة واحدة لكل سورة
-import { authState } from '../../core/authState.js';
-import { BoardRepository } from '../../data/repositories/BoardRepository.js';
+import { uiIcon } from '../views/InterfaceIcons.js';
 import { Student } from '../../domain/models/Student.js';
-import { topbar, bindTopbar, toast, confirmDialog, promptDialog, escapeHtml } from '../views/ui.js';
-import { renderMemorizationChipGrid } from '../views/SurahPickerView.js';
-import { LIMITS } from '../../core/config.js';
+import { createMemorizationRecorder } from '../../domain/usecases/MemorizationRecorder.js';
+import { resolvePriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMemorization.js';
+import { confirmDialog, promptDialog, escapeHtml, formatProgress } from '../views/ui.js';
+import { surahName, expandScope } from '../../shared/quran-data.js';
+import { matchesQueryNameOrNumber, matchesStudentName } from '../../shared/text-utils.js';
+import { LIMITS } from '../../shared/config.js';
+import { createFeedbackState } from '../layout/FeedbackStateView.js';
 
-export default async function StudentsPage(container, { params }) {
-    const user = authState.user();
+export default async function StudentsPage(container, { toast, params, layout, user, services, setTitle, signal, onDispose }) {
+    const BoardRepository = services.boards;
+    setTitle('جدول المتابعة — وسام');
     const boardId = params.boardId;
+    const board = await BoardRepository.get(boardId);
+    if (signal.aborted) return;
 
-    let board = await BoardRepository.get(boardId);
-    if (!board) {
-        container.innerHTML = `<div id="error-msg" style="display:block;"><p>اللوحة غير موجودة.</p></div>`;
+    if (!board || board.ownerUid !== user?.uid) {
+        setTitle('اللوحة غير متاحة — وسام');
+        layout?.setActiveBoard(null);
+        container.replaceChildren(createFeedbackState({
+            type: 'unavailable',
+            icon: '🔒',
+            eyebrow: 'إدارة اللوحة',
+            title: board ? 'لا تملك صلاحية إدارة هذه اللوحة' : 'اللوحة غير موجودة',
+            message: board ? 'هذه اللوحة مسجلة لمعلم آخر. يمكنك العودة إلى قائمة لوحاتك.' : 'لم نتمكن من العثور على اللوحة المطلوبة.',
+            actions: [
+                { label: 'العودة إلى لوحاتي', href: '/dashboard', primary: true },
+                { label: 'الرئيسية', href: '/' }
+            ]
+        }));
         return;
     }
-    if (board.ownerUid !== user.uid) {
-        container.innerHTML = `<div id="error-msg" style="display:block;"><p>لا تملك صلاحية إدارة هذه اللوحة.</p></div>`;
-        return;
-    }
 
-    let expandedId = null;
+    onDispose(() => { disposed = true; });
+    let disposed = false, adding = false, activeCell = null;
+    const busyStudents = new Set();
+    const scope = board.orderedSurahs();
+    const student = id => board.students[id]
+        ? new Student(id, board.students[id], scope, resolvePriorSurahs(board, board.students[id]))
+        : null;
+
+    // مزامنة قسم طلاب اللوحة في الشريط الجانبي.
+    // اللوحات الخاصة تُعرض بلا روابط (ملف الطالب غير منشور) لكن يبقى زر الإضافة متاحاً.
+    const rosterEntries = () => Object.keys(board.students)
+        .map(student)
+        .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+
+    const syncStudentsNav = () => {
+        layout?.setStudentsNav({
+            boardId,
+            boardName: board.settings.name,
+            linkable: true,
+            ownerView: true,
+            students: rosterEntries().map(entry => ({
+                id: entry.id,
+                name: entry.name,
+                progress: entry.progress,
+                completed: entry.isCompleted,
+            })),
+        });
+    };
+
+    setTitle(`${board.settings.name} — جدول المتابعة — وسام`);
+    layout?.setActiveBoard(board);
+    syncStudentsNav();
 
     container.innerHTML = `
-        ${topbar('dashboard')}
-        <div class="page-title-row">
-            <div>
-                <h1 class="page-title">${escapeHtml(board.settings.name)}</h1>
-                <p class="page-subtitle">إدارة الطلاب وتسجيل الحفظ</p>
+        <section class="sheet-page" aria-labelledby="sheetTitle">
+            <div class="sheet-heading">
+                <div>
+                    <p class="sheet-board-name">${escapeHtml(board.settings.name)}</p>
+                    <h1 id="sheetTitle">جدول المتابعة</h1>
+                    <p>تابع حفظ طلابك بخانة واحدة لكل سورة. تُحفظ التغييرات تلقائياً.</p>
+                </div>
             </div>
-            <div style="display:flex; gap:10px;">
-                <a href="/edit/${boardId}" class="btn btn-secondary">الإعدادات</a>
-                <a href="/b/${boardId}" class="btn btn-secondary">عرض اللوحة العامة</a>
+            <div class="sheet-panel">
+                <div class="sheet-toolbar">
+                    <label class="sheet-search"><span>الطالب</span><input id="studentSearch" type="search" placeholder="ابحث عن طالب…" aria-label="ابحث عن طالب"></label>
+                    <label class="sheet-search"><span>السورة</span><input id="surahSearch" type="search" placeholder="الاسم أو الرقم…" aria-label="ابحث عن سورة"></label>
+                    <button type="button" class="sheet-expand-button" id="expandSheet" aria-haspopup="dialog">توسيع الجدول</button>
+                    <div class="sheet-save"><span id="sheetSaveStatus" role="status" aria-live="polite">✓ جميع التغييرات محفوظة</span><button type="button" id="retrySave" hidden>إعادة المحاولة</button></div>
+                </div>
+                <div class="sheet-rangebar">
+                    <div class="sheet-browse-summary"><strong id="surahRange" aria-live="polite"></strong><span id="sheetScrollHelp">اسحب الجدول جانبياً لعرض بقية السور</span><button type="button" id="clearSheetFilters" hidden>عرض الكل</button></div>
+                    <div class="sheet-legend"><span><i class="sheet-legend-check" aria-hidden="true">${uiIcon('check')}</i> محفوظة</span><span><i class="sheet-legend-empty" aria-hidden="true"></i> لم تحفظ</span></div>
+                </div>
+                <div id="studentsHost" class="sheet-scroll" role="region" aria-label="جدول المتابعة" aria-describedby="sheetScrollHelp sheetKeyboardHelp" tabindex="0"></div>
+                <form id="addStudentForm" class="sheet-add"><span aria-hidden="true">＋</span><label for="newStudentName">طالب جديد</label><input class="form-input" id="newStudentName" placeholder="اكتب اسم الطالب…" maxlength="${LIMITS.MAX_NAME_LENGTH}" required autocomplete="off"><button class="btn btn-primary" id="addStudentBtn" type="submit">إضافة طالب</button></form>
+                <div class="sheet-selection-status" id="sheetSelectionHint" role="status" aria-live="polite">اختر خانة الطالب والسورة لتحديث الحفظ.</div>
+                <div class="sheet-footer"><span id="studentCount"></span><span id="sheetKeyboardHelp">تنقّل بالأسهم بين الخانات · Enter أو المسافة لتغيير الحالة</span></div>
             </div>
-        </div>
-
-        <div class="add-student-row">
-            <input type="text" class="form-input" id="newStudentName" placeholder="اسم الطالب الجديد" maxlength="${LIMITS.MAX_NAME_LENGTH}">
-            <button class="btn btn-primary" id="addStudentBtn">＋ إضافة</button>
-        </div>
-
-        <div id="studentsHost"></div>
+        </section>
+        <dialog class="sheet-student-dialog" aria-labelledby="studentActionsTitle">
+            <form method="dialog"><div class="sheet-dialog-heading"><h2 id="studentActionsTitle"></h2><button aria-label="إغلاق" class="sheet-icon-button">${uiIcon('x')}</button></div></form>
+            <a id="studentProfileLink" class="btn btn-secondary">ملف الطالب والأوسمة ↗</a>
+            <button type="button" id="editStudentPrior" class="btn btn-secondary">المحتسب من برامج سابقة</button>
+            <button type="button" id="renameStudent" class="btn btn-secondary">تعديل الاسم</button>
+            <button type="button" id="deleteStudent" class="btn btn-secondary sheet-delete">حذف الطالب</button>
+        </dialog>
     `;
-    bindTopbar(container);
 
     const host = container.querySelector('#studentsHost');
     const nameInput = container.querySelector('#newStudentName');
+    const searchInput = container.querySelector('#studentSearch');
+    const surahInput = container.querySelector('#surahSearch');
+    const dialog = container.querySelector('dialog');
+    const panel = container.querySelector('.sheet-panel');
+    const expandButton = container.querySelector('#expandSheet');
+    const panelAnchor = document.createComment('Table location');
+    panel.before(panelAnchor);
 
-    function orderedScope() {
-        return board.orderedSurahs();
+    const expandedDialog = document.createElement('dialog');
+    expandedDialog.className = 'sheet-expanded';
+    expandedDialog.setAttribute('aria-label', 'جدول المتابعة الموسّع');
+    container.append(expandedDialog);
+
+    let expandedScroll = { left: 0, top: 0 };
+    const rememberExpandedScroll = () => { expandedScroll = { left: host.scrollLeft, top: host.scrollTop }; };
+    expandedDialog.addEventListener('cancel', rememberExpandedScroll);
+
+    expandButton.onclick = () => {
+        if (expandedDialog.open) { rememberExpandedScroll(); expandedDialog.close(); return; }
+        const horizontal = host.scrollLeft, vertical = host.scrollTop;
+        expandedDialog.append(panel);
+        expandButton.autofocus = true;
+        expandedDialog.showModal();
+        expandButton.autofocus = false;
+        expandButton.textContent = 'إنهاء التوسيع';
+        expandButton.removeAttribute('aria-haspopup');
+        host.scrollLeft = horizontal; host.scrollTop = vertical;
+        expandButton.focus({ preventScroll: true });
+    };
+
+    expandedDialog.addEventListener('close', () => {
+        const { left: horizontal, top: vertical } = expandedScroll;
+        if (panelAnchor.isConnected) panelAnchor.after(panel);
+        expandButton.textContent = 'توسيع الجدول';
+        expandButton.setAttribute('aria-haspopup', 'dialog');
+        host.scrollLeft = horizontal; host.scrollTop = vertical;
+        if (!disposed) expandButton.focus({ preventScroll: true });
+    });
+
+    let actionStudentId = null;
+
+    const recorder = createMemorizationRecorder({
+        getStudent: student,
+        persist: async ({ id, surah, selected }, change) => {
+            await BoardRepository.setSurah(boardId, id, surah, selected, change.isNowComplete, change.wasComplete);
+            board.students[id].memorized = change.memorized;
+            if (change.isNowComplete && !change.wasComplete) board.students[id].completedDate = { toMillis: () => Date.now() };
+            else if (!change.isNowComplete && change.wasComplete) board.students[id].completedDate = null;
+        },
+        onChange: ({ id, surah, status }) => {
+            if (disposed) return;
+            const row = [...host.querySelectorAll('[data-student-row]')].find(el => el.dataset.studentRow === id);
+            const cell = row?.querySelector(`[data-surah="${surah}"]`);
+            if (cell) updateCell(cell);
+            const summary = row?.querySelector('.sheet-student-summary');
+            if (summary) summary.innerHTML = summaryHtml(student(id));
+            updateStatus();
+            if (status === 'saved') syncStudentsNav();
+            if (activeCell === `${id}:${surah}`) updateSelection(id, surah);
+        },
+    });
+
+    function updateStatus() {
+        const status = container.querySelector('#sheetSaveStatus');
+        status.dataset.state = recorder.failedCount ? 'error' : recorder.pendingCount ? 'saving' : 'saved';
+        status.textContent = recorder.failedCount
+            ? `${recorder.failedCount === 1 ? 'تغيير واحد لم يُحفظ' : `${recorder.failedCount} تغييرات لم تُحفظ`}${recorder.pendingCount ? ` · جارٍ حفظ ${recorder.pendingCount}` : ''}`
+            : recorder.pendingCount ? (recorder.pendingCount === 1 ? 'جارٍ حفظ التغيير…' : `جارٍ حفظ ${recorder.pendingCount} تغييرات…`) : '✓ جميع التغييرات محفوظة';
+        container.querySelector('#retrySave').hidden = !recorder.failedCount;
     }
 
-    function buildStudent(id, data) {
-        return new Student(id, data, orderedScope());
+    function summaryHtml(s) {
+        return `<span><bdi>${s.surahsCount} / ${s.totalSurahsInScope}</bdi> سورة <span class="sheet-progress-label">${formatProgress(s.progress)}٪</span></span><span class="sheet-progress" title="نسبة الحفظ بحسب عدد الآيات"><i style="width:${s.progress}%"></i></span>`;
     }
 
-    function renderList() {
-        const entries = Object.entries(board.students);
-        if (entries.length === 0) {
-            host.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-emoji">👥</div>
-                    <p class="empty-state-text">لا يوجد طلاب بعد — أضف أول طالب من الحقل أعلاه.</p>
-                </div>`;
+    function updateCell(button) {
+        const id = button.dataset.student, n = Number(button.dataset.surah), s = student(id);
+        const state = recorder.state(id, n);
+        const saving = state?.status === 'pending', failed = state?.status === 'failed';
+        const saved = saving ? state.selected : s.memorized.includes(n);
+        button.dataset.state = saving ? 'saving' : failed ? 'error' : saved ? 'saved' : 'empty';
+        button.setAttribute('aria-checked', String(saved));
+        button.setAttribute('aria-disabled', String(saving || busyStudents.has(id)));
+        button.setAttribute('aria-label', `${s.name} — سورة ${surahName(n)} — ${saving ? 'جارٍ الحفظ' : failed ? 'تعذر الحفظ، اضغط للمحاولة مجدداً' : saved ? 'محفوظة' : 'لم تحفظ'}`);
+        button.innerHTML = `<span aria-hidden="true">${saving ? uiIcon('loader-circle') : failed ? uiIcon('circle-alert') : saved ? uiIcon('check') : ''}</span>`;
+    }
+
+    function updateSelection(id, n) {
+        const s = student(id); if (!s) return;
+        const state = recorder.state(id, n);
+        container.querySelector('#sheetSelectionHint').textContent = `${s.name} · ${surahName(n)} · ${state?.status === 'pending' ? 'جارٍ الحفظ…' : state?.status === 'failed' ? 'تعذر الحفظ، أعد المحاولة' : s.memorized.includes(n) ? 'محفوظة' : 'لم تحفظ'}`;
+        host.querySelector('.sheet-active-surah')?.classList.remove('sheet-active-surah');
+        host.querySelector(`th[data-surah-heading="${n}"]`)?.classList.add('sheet-active-surah');
+    }
+
+    function visibleSurahs() {
+        return scope.filter(n => matchesQueryNameOrNumber({ name: surahName(n), number: n }, surahInput.value));
+    }
+
+    function renderTable() {
+        const all = Object.keys(board.students).map(student).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        const students = all.filter(s => matchesStudentName(s.name, searchInput.value));
+        const columns = visibleSurahs();
+
+        container.querySelector('#surahRange').textContent = columns.length ? `${columns.length} سورة · ${students.length} طالب` : 'لا توجد سور مطابقة';
+        container.querySelector('#clearSheetFilters').hidden = !searchInput.value && !surahInput.value;
+        container.querySelector('#sheetSelectionHint').textContent = 'اختر خانة الطالب والسورة لتحديث الحفظ.';
+        container.querySelector('#studentCount').textContent = `${students.length} من ${all.length} طالب`;
+
+        if (!students.length || !columns.length) {
+            host.innerHTML = `<div class="sheet-empty"><strong>${!all.length ? 'أضف طلابك إلى جدول المتابعة' : !students.length ? 'لا يوجد طالب بهذا الاسم' : 'لا توجد سورة مطابقة ضمن خطة اللوحة'}</strong><p>${!all.length ? 'اكتب اسم أول طالب في الحقل أدناه. سيظهر في صف مستقل.' : 'جرّب اسماً آخر أو امسح البحث.'}</p>${all.length ? '<button type="button" class="btn btn-secondary" data-clear-search>مسح البحث</button>' : ''}</div>`;
             return;
         }
 
-        const students = entries.map(([id, data]) => buildStudent(id, data));
-        students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        host.innerHTML = `
+            <table class="memorization-sheet" style="--sheet-columns:${columns.length}" aria-describedby="sheetKeyboardHelp">
+                <caption class="sheet-sr-only">جدول متابعة طلاب ${escapeHtml(board.settings.name)}. اضغط الخانة لتسجيل الحفظ أو إلغائه.</caption>
+                <thead>
+                    <tr>
+                        <th scope="col" class="sheet-student-column"><span>الطالب</span><small>الحفظ ضمن خطة اللوحة</small></th>
+                        ${columns.map(n => `<th scope="col" class="sheet-surah-column" data-surah-heading="${n}"><div class="sheet-surah-heading"><small>${n}</small><span>${surahName(n)}</span></div></th>`).join('')}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${students.map((s, r) => `
+                        <tr data-student-row="${s.id}">
+                            <th scope="row" class="sheet-student-column">
+                                <div class="sheet-student-top">
+                                    <a href="/edit/${boardId}/students/${s.id}" title="ملف الطالب والأوسمة">${escapeHtml(s.name)}</a>
+                                    <button type="button" class="sheet-icon-button" data-options="${s.id}" aria-label="خيارات ${escapeHtml(s.name)}">${uiIcon('ellipsis')}</button>
+                                </div>
+                                <div class="sheet-student-summary">${summaryHtml(s)}</div>
+                            </th>
+                            ${columns.map((n, c) => `<td><button type="button" role="checkbox" class="sheet-cell" data-student="${s.id}" data-surah="${n}" data-row="${r}" data-col="${c}" tabindex="-1"></button></td>`).join('')}
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
 
-        host.innerHTML = `<div class="students-list">${students.map(studentRowHtml).join('')}</div>`;
+        const cells = [...host.querySelectorAll('.sheet-cell')];
+        cells.forEach(updateCell);
 
-        host.querySelectorAll('.student-row-header').forEach(header => {
-            const toggle = () => {
-                const id = header.closest('.student-row').dataset.id;
-                expandedId = expandedId === id ? null : id;
-                renderList();
-            };
-            header.addEventListener('click', toggle);
-            header.addEventListener('keydown', e => {
-                if (e.target !== header) return; // تفادي التفعيل عند الضغط على Enter داخل أزرار إعادة التسمية/الحذف
-                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-            });
-        });
-
-        host.querySelectorAll('[data-expand-host]').forEach(expandHost => {
-            const id = expandHost.dataset.expandHost;
-            const student = students.find(s => s.id === id);
-            if (!student) return;
-            const memorizedSet = new Set(student.memorizedInScope);
-            expandHost.appendChild(renderMemorizationChipGrid({
-                orderedSurahs: orderedScope(),
-                memorizedSet,
-                onToggle: async (n, nowMemorized) => {
-                    const wasComplete = student.isCompleted;
-                    if (nowMemorized) memorizedSet.add(n); else memorizedSet.delete(n);
-                    const willBeComplete = orderedScope().every(s => memorizedSet.has(s));
-                    try {
-                        await BoardRepository.setSurah(boardId, id, n, nowMemorized, willBeComplete, wasComplete);
-                        // تحديث محلي متفائل لتفادي إعادة تحميل كاملة
-                        const memorizedArr = board.students[id].memorized || [];
-                        board.students[id].memorized = nowMemorized
-                            ? [...new Set([...memorizedArr, n])]
-                            : memorizedArr.filter(x => x !== n);
-                        if (willBeComplete && !wasComplete) {
-                            board.students[id].completedDate = { toMillis: () => Date.now() };
-                            toast(`🎉 ${student.name} أتم الحفظ بالكامل!`, 'success');
-                        } else if (!willBeComplete && wasComplete) {
-                            board.students[id].completedDate = null;
-                        }
-                        renderMiniProgress(id);
-                    } catch (err) {
-                        console.error(err);
-                        toast('تعذر حفظ التغيير — تحقق من الاتصال', 'error');
-                        throw err;
-                    }
-                },
-            }));
-        });
-
-        host.querySelectorAll('[data-rename]').forEach(btn => {
-            btn.addEventListener('click', async e => {
-                e.stopPropagation();
-                const id = btn.dataset.rename;
-                const current = board.students[id]?.name || '';
-                const newName = await promptDialog({ title: 'إعادة تسمية الطالب', label: '', value: current });
-                if (!newName || newName === current) return;
-                try {
-                    await BoardRepository.renameStudent(boardId, id, newName);
-                    board.students[id].name = newName;
-                    renderList();
-                    toast('تم تحديث الاسم', 'success');
-                } catch (err) {
-                    console.error(err);
-                    toast('تعذر تحديث الاسم', 'error');
-                }
-            });
-        });
-
-        host.querySelectorAll('[data-delete]').forEach(btn => {
-            btn.addEventListener('click', async e => {
-                e.stopPropagation();
-                const id = btn.dataset.delete;
-                const name = board.students[id]?.name || '';
-                const ok = await confirmDialog({
-                    title: 'حذف الطالب',
-                    message: `سيتم حذف "${name}" وكل بيانات حفظه من اللوحة نهائياً.`,
-                    confirmText: 'حذف',
-                    danger: true,
-                });
-                if (!ok) return;
-                try {
-                    await BoardRepository.deleteStudent(boardId, id);
-                    delete board.students[id];
-                    if (expandedId === id) expandedId = null;
-                    renderList();
-                    toast('تم حذف الطالب', 'success');
-                } catch (err) {
-                    console.error(err);
-                    toast('تعذر حذف الطالب', 'error');
-                }
-            });
-        });
-    }
-
-    function renderMiniProgress(id) {
-        const row = host.querySelector(`.student-row[data-id="${id}"]`);
-        if (!row) return;
-        const student = buildStudent(id, board.students[id]);
-        row.classList.toggle('completed', student.isCompleted);
-        const fill = row.querySelector('.mini-progress-fill');
-        const pct = row.querySelector('.student-row-pct');
-        const meta = row.querySelector('.expand-meta-count');
-        if (fill) fill.style.width = student.progressPercentage + '%';
-        if (pct) pct.textContent = student.progressPercentage + '%';
-        if (meta) meta.textContent = student.formattedSurahsCount;
-    }
-
-    function studentRowHtml(student) {
-        const isExpanded = expandedId === student.id;
-        return `
-            <div class="student-row ${student.isCompleted ? 'completed' : ''}" data-id="${student.id}">
-                <div class="student-row-header" role="button" tabindex="0" aria-expanded="${isExpanded}" aria-controls="expand-${student.id}">
-                    ${student.isCompleted ? '<span style="font-size:1.2rem;">👑</span>' : ''}
-                    <span class="student-row-name">${escapeHtml(student.name)}</span>
-                    <div class="mini-progress"><div class="mini-progress-fill" style="width:${student.progressPercentage}%;"></div></div>
-                    <span class="student-row-pct">${student.progressPercentage}%</span>
-                    <button class="menu-btn" data-rename="${student.id}" title="إعادة تسمية" aria-label="إعادة تسمية ${escapeHtml(student.name)}">✎</button>
-                    <button class="menu-btn" data-delete="${student.id}" title="حذف" aria-label="حذف ${escapeHtml(student.name)}">🗑</button>
-                </div>
-                ${isExpanded ? `
-                    <div class="student-expand" id="expand-${student.id}">
-                        <div class="student-expand-meta">
-                            <span class="expand-meta-count">${student.formattedSurahsCount}</span>
-                            <span>اضغط على السورة لتسجيل الحفظ</span>
-                        </div>
-                        <div data-expand-host="${student.id}"></div>
-                    </div>
-                ` : ''}
-            </div>`;
-    }
-
-    async function addStudent() {
-        const name = nameInput.value.trim();
-        if (!name) return;
-        const addBtn = container.querySelector('#addStudentBtn');
-        addBtn.disabled = true;
-        try {
-            const currentCount = Object.keys(board.students).length;
-            const id = await BoardRepository.addStudent(boardId, name, currentCount);
-            board.students[id] = { name, memorized: [], completedDate: null };
-            nameInput.value = '';
-            renderList();
-            toast('تمت إضافة الطالب', 'success');
-        } catch (err) {
-            console.error(err);
-            toast(err.message || 'تعذر إضافة الطالب', 'error');
-        } finally {
-            addBtn.disabled = false;
-            nameInput.focus();
+        const first = cells[0];
+        if (first) {
+            first.tabIndex = 0;
+            activeCell = `${first.dataset.student}:${first.dataset.surah}`;
+            updateSelection(first.dataset.student, Number(first.dataset.surah));
         }
     }
 
-    container.querySelector('#addStudentBtn').addEventListener('click', addStudent);
-    nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addStudent(); } });
+    host.addEventListener('click', async event => {
+        const optionsButton = event.target.closest('[data-options]');
+        if (optionsButton) {
+            actionStudentId = optionsButton.dataset.options;
+            const s = student(actionStudentId);
+            if (!s) return;
+            dialog.querySelector('#studentActionsTitle').textContent = s.name;
+            const link = dialog.querySelector('#studentProfileLink');
+            link.href = `/edit/${boardId}/students/${s.id}`;
+            link.hidden = false;
+            dialog.showModal();
+            return;
+        }
 
-    renderList();
+        const cell = event.target.closest('.sheet-cell');
+        if (!cell || cell.getAttribute('aria-disabled') === 'true') return;
+        const id = cell.dataset.student, surah = Number(cell.dataset.surah);
+        activeCell = `${id}:${surah}`;
+        host.querySelectorAll('.sheet-cell[tabindex="0"]').forEach(c => c.tabIndex = -1);
+        cell.tabIndex = 0;
+        updateSelection(id, surah);
+        recorder.toggle(id, surah);
+    });
+
+    host.addEventListener('keydown', event => {
+        const cell = event.target.closest('.sheet-cell');
+        if (!cell) return;
+        const r = Number(cell.dataset.row), c = Number(cell.dataset.col);
+        const next = (row, col) => host.querySelector(`.sheet-cell[data-row="${row}"][data-col="${col}"]`);
+        let target = null;
+        if (event.key === 'ArrowRight') target = next(r, c - 1);
+        else if (event.key === 'ArrowLeft') target = next(r, c + 1);
+        else if (event.key === 'ArrowUp') target = next(r - 1, c);
+        else if (event.key === 'ArrowDown') target = next(r + 1, c);
+        else if (event.key === ' ' || event.key === 'Enter') {
+            event.preventDefault();
+            cell.click();
+            return;
+        }
+        if (target) {
+            event.preventDefault();
+            cell.tabIndex = -1;
+            target.tabIndex = 0;
+            target.focus();
+            activeCell = `${target.dataset.student}:${target.dataset.surah}`;
+            updateSelection(target.dataset.student, Number(target.dataset.surah));
+        }
+    });
+
+    searchInput.addEventListener('input', renderTable);
+    surahInput.addEventListener('input', renderTable);
+    container.addEventListener('click', event => {
+        if (event.target.closest('[data-clear-search]')) clearFilters();
+    });
+
+    function clearFilters() {
+        searchInput.value = '';
+        surahInput.value = '';
+        renderTable();
+        host.scrollLeft = 0;
+        host.focus({ preventScroll: true });
+    }
+
+    container.querySelector('#clearSheetFilters').onclick = clearFilters;
+    container.querySelector('#retrySave').onclick = () => recorder.retry();
+
+    // نافذة اختيار الأجزاء المحتسبة لطالب واحد (برنامج سابق أنهىه)
+    function manageStudentPrior() {
+        const id = actionStudentId;
+        dialog.close();
+        const s = student(id);
+        if (!s) return;
+        const priorDialog = document.createElement('dialog');
+        priorDialog.className = 'promote-dialog prior-dialog';
+        priorDialog.setAttribute('aria-labelledby', 'priorDialogTitle');
+        const current = new Set(board.students[id]?.priorSurahs || []);
+        const coveredJuzs = new Set(s.priorSurahs.map(n => SURAHS[n - 1]?.juz).filter(Boolean));
+        priorDialog.innerHTML = `
+            <div class="promote-head">
+                <div><span class="eyebrow">محتسب سابقاً</span><h2 id="priorDialogTitle">${escapeHtml(s.name)}</h2></div>
+                <button type="button" class="sheet-icon-button" id="closePrior" aria-label="إغلاق">✕</button>
+            </div>
+            <p class="promote-summary">اختر الأجزاء التي أتمها الطالب في برنامج سابق. تُضاف لأوسمته ولا تُحتسب في تقدم الخطة الحالية.</p>
+            <div class="prior-juz-grid">
+                ${Array.from({ length: 30 }, (_, i) => i + 1).map(juz => `
+                    <button type="button" class="prior-juz-chip ${coveredJuzs.has(juz) ? 'is-on' : ''}" data-prior-juz="${juz}" aria-pressed="${coveredJuzs.has(juz)}">${juz}</button>
+                `).join('')}
+            </div>
+            <p class="promote-note" id="priorNote"></p>
+            <div class="promote-actions">
+                <button type="button" class="btn btn-primary" id="savePrior">حفظ</button>
+                <button type="button" class="btn btn-secondary" id="clearPrior">مسح المحتسب</button>
+                <button type="button" class="btn btn-secondary" id="cancelPrior">إلغاء</button>
+            </div>
+        `;
+        container.append(priorDialog);
+        const note = priorDialog.querySelector('#priorNote');
+        const selectedJuzs = () => [...priorDialog.querySelectorAll('[data-prior-juz][aria-pressed="true"]')].map(b => Number(b.dataset.priorJuz));
+        const refreshNote = () => {
+            const juzs = selectedJuzs();
+            const surahs = juzs.length ? expandScope({ type: 'juz', juzNumbers: juzs }) : [];
+            note.textContent = juzs.length
+                ? `سيُحتسب ${priorSummaryText(surahs)}.`
+                : 'لا يوجد محتسب إضافي لهذا الطالب.';
+        };
+        priorDialog.querySelectorAll('[data-prior-juz]').forEach(chip => chip.addEventListener('click', () => {
+            const on = chip.getAttribute('aria-pressed') === 'true';
+            chip.setAttribute('aria-pressed', String(!on));
+            chip.classList.toggle('is-on', !on);
+            refreshNote();
+        }));
+        priorDialog.querySelector('#closePrior').onclick = () => priorDialog.close();
+        priorDialog.querySelector('#cancelPrior').onclick = () => priorDialog.close();
+        priorDialog.addEventListener('close', () => priorDialog.remove(), { once: true });
+        priorDialog.querySelector('#clearPrior').onclick = async () => {
+            await savePriorFor(id, []);
+        };
+        priorDialog.querySelector('#savePrior').onclick = async () => {
+            const juzs = selectedJuzs();
+            await savePriorFor(id, juzs.length ? expandScope({ type: 'juz', juzNumbers: juzs }) : []);
+        };
+        async function savePriorFor(studentId, surahNumbers) {
+            const button = priorDialog.querySelector('#savePrior');
+            button.disabled = true;
+            try {
+                await BoardRepository.setStudentPrior(boardId, studentId, surahNumbers);
+                board.students[studentId].priorSurahs = surahNumbers;
+                priorDialog.close();
+                if (!disposed) { renderTable(); toast('تم تحديث المحتسب سابقاً', 'success'); }
+            } catch (error) {
+                console.error(error);
+                toast('تعذر حفظ المحتسب', 'error');
+                button.disabled = false;
+            }
+        }
+        refreshNote();
+        priorDialog.showModal();
+    }
+
+    container.querySelector('#addStudentForm').addEventListener('submit', async event => {
+        event.preventDefault();
+        const name = nameInput.value.trim();
+        if (!name || adding) return;
+        adding = true;
+        const button = container.querySelector('#addStudentBtn');
+        button.disabled = true;
+        try {
+            const id = await BoardRepository.addStudent(boardId, name, Object.keys(board.students).length);
+            board.students[id] = { name, memorized: [], completedDate: null };
+            if (disposed) return;
+            nameInput.value = '';
+            searchInput.value = '';
+            syncStudentsNav();
+            renderTable();
+            toast(`تمت إضافة ${name}`, 'success');
+        } catch (error) {
+            if (!disposed) toast(error.message || 'تعذر إضافة الطالب', 'error');
+        } finally {
+            adding = false;
+            if (!disposed) { button.disabled = false; nameInput.focus(); }
+        }
+    });
+
+    async function manageStudent(remove) {
+        const id = actionStudentId;
+        dialog.close();
+        if (recorder.isPending(id) || busyStudents.has(id)) {
+            toast('انتظر اكتمال حفظ تغييرات الطالب أولاً');
+            return;
+        }
+        busyStudents.add(id);
+        try {
+            const name = board.students[id].name;
+            if (remove) {
+                const ok = await confirmDialog({ signal,
+                    title: 'حذف الطالب',
+                    message: `سيتم حذف "${name}" وكل بيانات حفظه من اللوحة نهائياً.`,
+                    confirmText: 'حذف',
+                    danger: true
+                });
+                if (!ok || disposed) return;
+                await BoardRepository.deleteStudent(boardId, id);
+                delete board.students[id];
+                recorder.forget(id);
+            } else {
+                const newName = await promptDialog({ signal, title: 'تعديل اسم الطالب', label: 'اسم الطالب', value: name });
+                if (!newName?.trim() || newName === name || disposed) return;
+                await BoardRepository.renameStudent(boardId, id, newName.trim());
+                board.students[id].name = newName.trim();
+            }
+            if (!disposed) {
+                syncStudentsNav();
+                renderTable();
+                updateStatus();
+                const options = [...host.querySelectorAll('[data-options]')].find(button => button.dataset.options === id);
+                (options || searchInput).focus({ preventScroll: true });
+                toast(remove ? 'تم حذف الطالب' : 'تم تحديث الاسم', 'success');
+            }
+        } catch {
+            if (!disposed) toast('تعذر حفظ التغيير، حاول مجدداً', 'error');
+        } finally {
+            busyStudents.delete(id);
+            if (!disposed) host.querySelectorAll('.sheet-cell').forEach(updateCell);
+        }
+    }
+
+    container.querySelector('#renameStudent').onclick = () => manageStudent(false);
+
+    // محتسب سابقاً لطالب واحد: يُضاف لأوسمته دون التأثير على تقدم الخطة
+    container.querySelector('#editStudentPrior').onclick = () => manageStudentPrior();
+    container.querySelector('#deleteStudent').onclick = () => manageStudent(true);
+
+    renderTable();
+    return () => {
+        disposed = true;
+        if (dialog.open) dialog.close();
+        if (expandedDialog.open) expandedDialog.close();
+    };
 }

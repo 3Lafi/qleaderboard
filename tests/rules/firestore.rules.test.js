@@ -51,7 +51,7 @@ before(async () => {
 });
 
 after(async () => {
-    await testEnv.cleanup();
+    await testEnv?.cleanup();
 });
 
 test('get: owner can always read their own board, public or private', async () => {
@@ -175,24 +175,18 @@ test('update: createdAt cannot be changed', async () => {
     await assertFails(updateDoc(doc(ownerDb, 'leaderboards', 'u4'), { createdAt: Timestamp.now() }));
 });
 
-test('update: banner cannot be changed once set', async () => {
+test('update: banner can be changed by owner', async () => {
     await seedBoard('u7', validBoardData());
     const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
-    await assertFails(updateDoc(doc(ownerDb, 'leaderboards', 'u7'), {
+    await assertSucceeds(updateDoc(doc(ownerDb, 'leaderboards', 'u7'), {
         'settings.banner': { themeId: 'midnight' },
     }));
 });
 
-test('update: a legacy board without a banner may add one exactly once', async () => {
-    await seedBoard('u8', validBoardData({
-        settings: { name: 'لوحة قديمة', isPublic: true }, // بلا banner — أنشئت قبل الميزة
-    }));
-    const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
-    await assertSucceeds(updateDoc(doc(ownerDb, 'leaderboards', 'u8'), {
-        'settings.banner': { themeId: 'emerald' },
-    }));
-    // بعد التثبيت الأول تُقفل
-    await assertFails(updateDoc(doc(ownerDb, 'leaderboards', 'u8'), {
+test('update: banner cannot be changed by non-owner', async () => {
+    await seedBoard('u8', validBoardData());
+    const strangerDb = testEnv.authenticatedContext(STRANGER_UID).firestore();
+    await assertFails(updateDoc(doc(strangerDb, 'leaderboards', 'u8'), {
         'settings.banner': { themeId: 'amber' },
     }));
 });

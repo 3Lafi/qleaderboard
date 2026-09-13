@@ -1,15 +1,5 @@
 // صفحة تسجيل الدخول: جوجل + بريد إلكتروني/كلمة مرور
-import { auth } from '../../core/firebase.js';
-import {
-    GoogleAuthProvider,
-    signInWithPopup,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    sendPasswordResetEmail,
-    updateProfile,
-} from '../../core/firebase-sdk.js';
-import { bannerHeader, toast } from '../views/ui.js';
-import { queryParam } from '../../core/router.js';
+import { loginDestination } from '../../application/navigation/routes.js';
 
 const ERROR_MESSAGES = {
     'auth/invalid-email': 'البريد الإلكتروني غير صحيح.',
@@ -21,7 +11,7 @@ const ERROR_MESSAGES = {
     'auth/popup-blocked': 'المتصفح منع النافذة المنبثقة — جرّب الدخول بالبريد الإلكتروني.',
     'auth/popup-closed-by-user': 'تم إغلاق نافذة الدخول قبل الاكتمال.',
     'auth/network-request-failed': 'تعذر الاتصال بالشبكة.',
-    'auth/unauthorized-domain': 'هذا النطاق غير مصرّح له بتسجيل الدخول — أضفه في Authentication > Settings > Authorized domains.',
+    'auth/unauthorized-domain': 'تسجيل الدخول غير متاح من هذا الرابط حالياً. تواصل مع مسؤول الموقع.',
 };
 
 function friendlyError(err) {
@@ -29,12 +19,14 @@ function friendlyError(err) {
     return ERROR_MESSAGES[err?.code] || 'حدث خطأ أثناء تسجيل الدخول، حاول مرة أخرى.';
 }
 
-export default function LoginPage(container, { navigate }) {
-    const next = queryParam('next') || '/dashboard';
+export default function LoginPage(container, { toast, navigate, services, setTitle, url }) {
+    setTitle('تسجيل الدخول — وسام');
+    const next = loginDestination(url.searchParams.get('next'));
+    const authentication = services.authentication;
     let mode = 'signin'; // signin | signup
 
     container.innerHTML = `
-        ${bannerHeader({ title: 'دخول المعلمين', subtitle: 'سجّل الدخول لإنشاء وإدارة لوحات الحفظ' })}
+        <div class="auth-intro"><span class="eyebrow">أهلاً بك في وسام</span><h1>مساحتك لإدارة الحلقات</h1><p>سجّل الدخول للوصول إلى لوحاتك ومتابعة حفظ طلابك.</p></div>
         <div class="auth-card">
             <h2 class="auth-title" id="authTitle">تسجيل الدخول</h2>
             <div class="auth-error" id="authError" role="alert"></div>
@@ -53,11 +45,11 @@ export default function LoginPage(container, { navigate }) {
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="emailInput">البريد الإلكتروني</label>
-                    <input type="email" class="form-input" id="emailInput" autocomplete="email" required>
+                    <input type="email" class="form-input" id="emailInput" autocomplete="email" dir="ltr" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="passwordInput">كلمة المرور</label>
-                    <input type="password" class="form-input" id="passwordInput" autocomplete="current-password" required minlength="6">
+                    <div class="password-field"><input type="password" class="form-input" id="passwordInput" autocomplete="current-password" dir="ltr" required minlength="6"><button type="button" id="togglePassword" aria-label="إظهار كلمة المرور" aria-pressed="false">إظهار</button></div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width:100%;" id="submitBtn">تسجيل الدخول</button>
             </form>
@@ -72,6 +64,15 @@ export default function LoginPage(container, { navigate }) {
         </div>
     `;
 
+    container.querySelector('#togglePassword').addEventListener('click', event => {
+        const input = container.querySelector('#passwordInput');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        event.currentTarget.textContent = show ? 'إخفاء' : 'إظهار';
+        event.currentTarget.setAttribute('aria-pressed',String(show));
+        event.currentTarget.setAttribute('aria-label',show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+    });
+
     const errorBox = container.querySelector('#authError');
     const showError = msg => {
         errorBox.textContent = msg;
@@ -82,8 +83,8 @@ export default function LoginPage(container, { navigate }) {
     // يجب استدعاء signInWithPopup مباشرة داخل معالج النقر دون أي await قبله لتفادي حجب المتصفح للنافذة
     container.querySelector('#googleBtn').addEventListener('click', () => {
         clearError();
-        signInWithPopup(auth, new GoogleAuthProvider())
-            .then(() => { toast('تم تسجيل الدخول بنجاح ✓', 'success'); navigate(next); })
+        authentication.signInGoogle()
+            .then(() => { toast('تم تسجيل الدخول بنجاح ✓', 'success'); navigate(next, { replace: true }); })
             .catch(err => { if (err.code !== 'auth/cancelled-popup-request') showError(friendlyError(err)); });
     });
 
@@ -95,6 +96,7 @@ export default function LoginPage(container, { navigate }) {
     const toggleModeBtn = container.querySelector('#toggleModeBtn');
 
     function applyMode() {
+        container.querySelector('#passwordInput').autocomplete = mode === 'signup' ? 'new-password' : 'current-password';
         if (mode === 'signup') {
             authTitle.textContent = 'إنشاء حساب معلم';
             submitBtn.textContent = 'إنشاء الحساب';
@@ -121,21 +123,23 @@ export default function LoginPage(container, { navigate }) {
         clearError();
         const email = container.querySelector('#emailInput').value.trim();
         const password = container.querySelector('#passwordInput').value;
+        if (submitBtn.disabled) return;
         submitBtn.disabled = true;
+        toggleModeBtn.disabled = true;
         try {
             if (mode === 'signup') {
                 const name = nameInput.value.trim();
-                const cred = await createUserWithEmailAndPassword(auth, email, password);
-                if (name) await updateProfile(cred.user, { displayName: name });
+                await authentication.signUp(email, password, name);
             } else {
-                await signInWithEmailAndPassword(auth, email, password);
+                await authentication.signIn(email, password);
             }
             toast('تم تسجيل الدخول بنجاح ✓', 'success');
-            navigate(next);
+            navigate(next, { replace: true });
         } catch (err) {
             showError(friendlyError(err));
         } finally {
             submitBtn.disabled = false;
+            toggleModeBtn.disabled = false;
         }
     });
 
@@ -143,7 +147,7 @@ export default function LoginPage(container, { navigate }) {
         const email = container.querySelector('#emailInput').value.trim();
         if (!email) { showError('اكتب بريدك الإلكتروني أولاً ثم اضغط نسيت كلمة المرور.'); return; }
         try {
-            await sendPasswordResetEmail(auth, email);
+            await authentication.resetPassword(email);
             toast('تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني', 'success');
         } catch (err) {
             showError(friendlyError(err));

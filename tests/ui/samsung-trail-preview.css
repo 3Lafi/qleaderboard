@@ -1,0 +1,769 @@
+/* ==========================================================================
+   مسار الإنجاز القرآني — نمط مضمار وسام التفاعلي (Wisam Journey Design System)
+   تطبيق أفضل الممارسات العالمية لخرائط التقدم (Duolingo / Samsung Health / Learning Paths)
+   متوافق 100% مع هوية وسام: بدون تكدس، بدون خطوط منقطة، وبأبعاد بطاقة الطالب.
+   ========================================================================== */
+
+/* ----------------- الحاوية والصفحة العامة ----------------- */
+.samsung-trail-body {
+    background-color: var(--bg-color, #f8f9f6);
+    color: var(--text-main, #233c33);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Cairo", "Amiri", sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    direction: rtl;
+}
+
+.samsung-trail-app {
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 20px 16px 60px;
+}
+
+/* ----------------- لوحة المحاكاة والتحكم التجريبية ----------------- */
+.trail-sim-panel {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    border-radius: var(--radius-panel, 16px);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow-sm, 0 3px 12px rgba(21, 62, 41, 0.03));
+}
+
+.trail-sim-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-subtle, #dfe7e2);
+}
+
+.trail-sim-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.trail-sim-title h1 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--primary-dark, #123f35);
+    font-weight: 800;
+}
+
+.trail-pill-badge {
+    background: var(--primary-color, #216653);
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 99px;
+}
+
+.trail-sim-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px;
+    align-items: center;
+}
+
+.trail-control-col {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.trail-control-col label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted, #5f7067);
+}
+
+.trail-btn-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.trail-btn {
+    background: var(--surface-muted, #f1f5f2);
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    color: var(--text-main, #233c33);
+    padding: 5px 11px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trail-btn:hover {
+    background: #e5ece7;
+    color: var(--primary-dark, #123f35);
+}
+
+.trail-btn.is-active {
+    background: var(--primary-color, #216653);
+    border-color: var(--primary-dark, #123f35);
+    color: #ffffff;
+    box-shadow: 0 2px 8px rgba(33, 102, 83, 0.25);
+}
+
+.trail-select {
+    background: #ffffff;
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    color: var(--text-main, #233c33);
+    padding: 7px 12px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+
+.trail-select:focus {
+    border-color: var(--primary-color, #216653);
+}
+
+/* ----------------- أزرار التبديل بين الخرائط الثلاث ----------------- */
+.trail-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.trail-tab-btn {
+    flex: 1;
+    min-width: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #ffffff;
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    border-radius: 12px;
+    padding: 11px 16px;
+    color: var(--text-muted, #5f7067);
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.trail-tab-btn:hover {
+    border-color: var(--primary-light, #37856e);
+    color: var(--primary-dark, #123f35);
+}
+
+.trail-tab-btn.is-active {
+    background: var(--primary-gradient, linear-gradient(135deg, #2b725e, #174d3f));
+    border-color: transparent;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(23, 77, 63, 0.25);
+}
+
+.trail-tab-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 7px;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.trail-tab-btn:not(.is-active) .trail-tab-count {
+    background: var(--surface-muted, #f1f5f2);
+    color: var(--text-muted, #5f7067);
+}
+
+/* ----------------- بطاقة المسار الرئيسية (Wisam Map Card) ----------------- */
+.wisam-track-card {
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    border-radius: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #fbfdfa 100%);
+    padding: 20px 22px 18px;
+    box-shadow: var(--shadow-sm, 0 3px 12px rgba(21, 62, 41, 0.04));
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+}
+
+.wisam-card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.wisam-card-head h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--primary-dark, #123f35);
+    font-weight: 800;
+}
+
+.wisam-card-head p {
+    margin: 4px 0 0;
+    font-size: 0.84rem;
+    color: var(--text-muted, #5f7067);
+}
+
+.wisam-card-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.wisam-mode-toggle {
+    display: flex;
+    background: var(--surface-muted, #f1f5f2);
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    border-radius: 99px;
+    padding: 2px;
+}
+
+.wisam-mode-btn {
+    border: none;
+    background: transparent;
+    padding: 4px 10px;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted, #5f7067);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.wisam-mode-btn.is-active {
+    background: #ffffff;
+    color: var(--primary-dark, #123f35);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.wisam-card-progress {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.wisam-progress-num {
+    text-align: center;
+}
+
+.wisam-progress-num strong {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--primary-dark, #123f35);
+    line-height: 1;
+}
+
+.wisam-progress-num span {
+    display: block;
+    margin-top: 3px;
+    font-size: 0.72rem;
+    color: var(--text-muted, #5f7067);
+}
+
+/* ----------------- مساحة عرض المسار (Track Viewport) ----------------- */
+.samsung-map-viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 860 / 360;
+    max-height: 400px;
+    background: #fbfdfa;
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: inset 0 2px 8px rgba(21, 62, 41, 0.02);
+}
+
+.samsung-svg-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+}
+
+/* ----------------- طبقة المحطات (Station Badges Layer) ----------------- */
+.samsung-stations-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+/* المحطة: الوسام مباشرة بدون أي دائرة أو حاوية خارجية */
+.samsung-station-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    outline: none;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.samsung-station-node:hover {
+    transform: translate(-50%, -50%) scale(1.22);
+    z-index: 35;
+}
+
+.samsung-station-node:focus-visible {
+    outline: 2px solid var(--primary-color, #216653);
+    outline-offset: 3px;
+    border-radius: 50%;
+}
+
+/* حجم الوسام الرشيق (38px) يمنع التكدس مع المحافظة على وضوح الخط القرآني */
+.station-badge-art {
+    display: block;
+    width: 38px;
+    height: 38px;
+    position: relative;
+    flex-shrink: 0;
+    transition: filter 0.25s ease, opacity 0.25s ease;
+}
+
+.station-frame-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    pointer-events: none;
+}
+
+.station-calligraphy-img {
+    position: absolute;
+    width: 82%;
+    height: 36%;
+    top: 54%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    pointer-events: none;
+    filter: brightness(0) saturate(100%) invert(20%) sepia(18%) saturate(1180%) hue-rotate(105deg) brightness(94%) contrast(95%);
+    transition: filter 0.25s ease;
+}
+
+/* محطة مميزة (Milestone Station) مثل السور الطويلة أو الأجزاء الرئيسية */
+.samsung-station-node.is-milestone .station-badge-art {
+    width: 44px;
+    height: 44px;
+}
+
+.samsung-station-node.is-milestone::before {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    border: 1.5px solid #d4af37;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* 1. الوسام المحفوظ المكتسب (Earned Badge) */
+.samsung-station-node.is-done .station-badge-art {
+    filter: drop-shadow(0 3px 8px rgba(18, 63, 53, 0.25));
+}
+
+/* ختم علامة الإنجاز الصغير في ركن الوسام */
+.station-check-medal {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--primary-color, #216653);
+    color: #ffffff;
+    border: 1.5px solid #ffffff;
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    font-size: 0.6rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    pointer-events: none;
+}
+
+/* علامات البداية والنهاية الرمزية الخفيفة */
+.trail-flag-node {
+    position: absolute;
+    background: #ffffff;
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    border-radius: 99px;
+    padding: 2px 8px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--primary-dark, #123f35);
+    pointer-events: none;
+    z-index: 15;
+    white-space: nowrap;
+}
+
+.trail-flag-node.start-flag {
+    transform: translate(-105%, -50%);
+    margin-left: -8px;
+}
+
+.trail-flag-node.finish-flag {
+    transform: translate(-105%, -50%);
+    margin-left: -8px;
+}
+
+/* 2. الوسام القادم / المقفل (Locked Badge) */
+.samsung-station-node:not(.is-done):not(.is-current) .station-badge-art {
+    filter: grayscale(0.85);
+    opacity: 0.48;
+}
+
+.samsung-station-node:not(.is-done):not(.is-current):hover .station-badge-art {
+    filter: grayscale(0.15);
+    opacity: 0.9;
+}
+
+/* 3. المحطة الحالية النشطة (Active Target Station) */
+.samsung-station-node.is-current {
+    transform: translate(-50%, -50%) scale(1.18);
+    z-index: 30;
+}
+
+.samsung-station-node.is-current .station-badge-art {
+    filter: drop-shadow(0 4px 14px rgba(33, 102, 83, 0.55));
+    opacity: 1;
+}
+
+.samsung-station-node.is-current::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 2.5px solid var(--primary-color, #216653);
+    animation: activeAura 1.8s infinite alternate ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes activeAura {
+    0% { transform: scale(0.98); opacity: 0.6; }
+    100% { transform: scale(1.22); opacity: 0; }
+}
+
+/* ----------------- مؤشر المتسابق / الدبوس العائم (Wisam Emerald Pin) ----------------- */
+.samsung-avatar-pin {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    pointer-events: none;
+    z-index: 45;
+    margin-top: -6px;
+    animation: pinFloat 2.5s ease-in-out infinite alternate;
+}
+
+.pin-tag {
+    background: var(--primary-dark, #123f35);
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 99px;
+    white-space: nowrap;
+    margin-bottom: 3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+@keyframes pinFloat {
+    0% { transform: translate(-50%, -100%) translateY(0); }
+    100% { transform: translate(-50%, -100%) translateY(-5px); }
+}
+
+.pin-bubble {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-dark, #123f35);
+    border: 2px solid #c8a452;
+    box-shadow: 0 4px 14px rgba(18, 63, 53, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.pin-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.pin-pointer {
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 6px solid var(--primary-dark, #123f35);
+    margin-top: -1px;
+}
+
+/* ----------------- التلميح التفاعلي العائم (Floating Micro-Tooltip) ----------------- */
+.wisam-station-tooltip {
+    position: absolute;
+    transform: translate(-50%, -100%);
+    margin-top: -10px;
+    background: var(--primary-dark, #123f35);
+    color: #ffffff;
+    border: 1px solid rgba(200, 164, 82, 0.4);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+    z-index: 60;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.wisam-station-tooltip.is-visible {
+    opacity: 1;
+    transform: translate(-50%, -100%) translateY(-6px);
+}
+
+.wisam-station-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--primary-dark, #123f35) transparent transparent transparent;
+}
+
+.tooltip-title {
+    display: block;
+    font-size: 0.85rem;
+    color: #f7d57f;
+    font-weight: 800;
+}
+
+.tooltip-meta {
+    display: block;
+    font-size: 0.7rem;
+    color: #b8d9c8;
+    margin-top: 2px;
+}
+
+/* ----------------- نافذة تفاصيل السورة التفاعلية (Modal) ----------------- */
+.samsung-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(18, 63, 53, 0.5);
+    backdrop-filter: blur(5px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+}
+
+.samsung-modal-overlay.is-open {
+    display: flex;
+}
+
+.samsung-modal-card {
+    background: #ffffff;
+    border-radius: 20px;
+    max-width: 380px;
+    width: 100%;
+    padding: 24px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-subtle, #dfe7e2);
+    position: relative;
+    text-align: center;
+    animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+    from { opacity: 0; transform: scale(0.92); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.samsung-modal-close {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: var(--surface-muted, #f1f5f2);
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: var(--text-muted, #5f7067);
+    cursor: pointer;
+}
+
+.samsung-modal-badge {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 12px;
+    position: relative;
+}
+
+.samsung-modal-badge img.modal-frame {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.samsung-modal-badge img.modal-calligraphy {
+    position: absolute;
+    width: 82%;
+    height: 36%;
+    top: 54%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    object-fit: contain;
+    filter: brightness(0) saturate(100%) invert(20%) sepia(18%) saturate(1180%) hue-rotate(105deg) brightness(94%) contrast(95%);
+}
+
+.samsung-modal-title h3 {
+    margin: 0 0 4px;
+    font-size: 1.25rem;
+    color: var(--primary-dark, #123f35);
+    font-weight: 800;
+}
+
+.samsung-modal-title p {
+    margin: 0 0 16px;
+    font-size: 0.82rem;
+    color: var(--text-muted, #5f7067);
+}
+
+.samsung-modal-stats {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.samsung-modal-stat-box {
+    background: var(--surface-muted, #f1f5f2);
+    padding: 8px 14px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.samsung-modal-stat-box strong {
+    display: block;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--primary-dark, #123f35);
+}
+
+.samsung-modal-stat-box span {
+    font-size: 0.72rem;
+    color: var(--text-muted, #5f7067);
+}
+
+.samsung-modal-btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: none;
+    font-size: 0.92rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.samsung-modal-btn.btn-save {
+    background: var(--primary-gradient, linear-gradient(135deg, #2b725e, #174d3f));
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(33, 102, 83, 0.3);
+}
+
+.samsung-modal-btn.btn-remove {
+    background: #fbebee;
+    color: #b71c1c;
+    border: 1px solid #ffcdd2;
+}
+
+/* ----------------- التجاوب مع الجوال (Mobile) ----------------- */
+@media (max-width: 640px) {
+    .samsung-trail-app {
+        padding: 12px 10px 40px;
+    }
+
+    .wisam-track-card {
+        padding: 16px 14px;
+        border-radius: 16px;
+    }
+
+    .samsung-map-viewport {
+        aspect-ratio: 860 / 400;
+        max-height: 310px;
+    }
+
+    .station-badge-art {
+        width: 27px;
+        height: 27px;
+    }
+
+    .samsung-station-node.is-milestone .station-badge-art {
+        width: 32px;
+        height: 32px;
+    }
+
+    .station-check-medal {
+        width: 11px;
+        height: 11px;
+        font-size: 0.45rem;
+    }
+
+    .pin-bubble {
+        width: 26px;
+        height: 26px;
+    }
+
+    .pin-tag,
+    .trail-flag-node {
+        display: none !important;
+    }
+
+    .trail-tabs {
+        flex-direction: column;
+    }
+
+    .trail-tab-btn {
+        min-width: unset;
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+
+    .wisam-card-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

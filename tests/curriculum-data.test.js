@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveCurriculumSurahs } from '../js/core/curriculum-data.js';
+import { resolveCurriculumSurahs } from '../js/shared/curriculum-data.js';
 
 test('resolves a specific term to the exact official surah list (Saudi tahfeez, primary, grade 1, term 1)', () => {
     const nums = resolveCurriculumSurahs({ countryId: 1, systemId: 2, stageId: 1, levelId: 1, termId: 1 });
