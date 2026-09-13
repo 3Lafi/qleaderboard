@@ -16,8 +16,6 @@ permissions:
 
 jobs:
   refresh:
-    # Repositories without the service-account secret keep normal CI green.
-    if: ${{ secrets.FIREBASE_SERVICE_ACCOUNT != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
