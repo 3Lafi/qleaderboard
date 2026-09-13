@@ -46,6 +46,11 @@ service cloud.firestore {
                     && (!('banner' in request.resource.data.settings)
                         || request.resource.data.settings.banner.themeId is string)
                     && request.resource.data.students == {}
+                    && (!('initialBanner' in request.resource.data)
+                        || (request.resource.data.initialBanner.name == request.resource.data.settings.name
+                            && request.resource.data.initialBanner.schoolName == request.resource.data.settings.schoolName
+                            && request.resource.data.initialBanner.classLabel == request.resource.data.settings.classLabel
+                            && request.resource.data.initialBanner.banner == request.resource.data.settings.banner))
                     && request.resource.data.createdAt == request.time;
 
       // ملاحظة: لا يمكن التحقق من شكل كل عنصر داخل خريطة students هنا — لغة قواعد
@@ -56,6 +61,7 @@ service cloud.firestore {
       // تصميم البانر يمكن اختياره وتعديله من قبل مالك اللوحة في أي وقت.
       allow update: if isOwner()
                     && request.resource.data.ownerUid == resource.data.ownerUid
+                    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['initialBanner'])
                     && request.resource.data.createdAt == resource.data.createdAt
                     && isValidBoardName(request.resource.data.settings.name)
                     && request.resource.data.settings.isPublic is bool

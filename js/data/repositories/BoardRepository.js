@@ -48,11 +48,18 @@ export const BoardRepository = {
 
     async create(ownerUid, settings) {
         const id = randomId();
+        const initialSettings = sanitizeSettings(settings);
         await setDoc(boardRef(id), {
             ownerUid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
-            settings: sanitizeSettings(settings),
+            settings: initialSettings,
+            initialBanner: {
+                name: initialSettings.name,
+                schoolName: initialSettings.schoolName,
+                classLabel: initialSettings.classLabel,
+                banner: initialSettings.banner,
+            },
             students: {},
         });
         return id;
