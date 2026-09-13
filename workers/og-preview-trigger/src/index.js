@@ -1,4 +1,4 @@
-const FIREBASE_CERTIFICATES_URL = 'https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com';
+const FIREBASE_KEYS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 const FIRESTORE_API_URL = 'https://firestore.googleapis.com/v1/projects';
 let certificates = null;
 let certificatesExpiresAt = 0;
@@ -21,10 +21,11 @@ function corsHeaders(request) {
 
 async function firebaseCertificates() {
     if (certificates && Date.now() < certificatesExpiresAt) return certificates;
-    const response = await fetch(FIREBASE_CERTIFICATES_URL);
+    const response = await fetch(FIREBASE_KEYS_URL);
     if (!response.ok) throw new Error('Could not load Firebase signing certificates');
     const cacheSeconds = Number(response.headers.get('Cache-Control')?.match(/max-age=(\d+)/)?.[1] || 3600);
-    certificates = await response.json();
+    const { keys = [] } = await response.json();
+    certificates = Object.fromEntries(keys.filter((key) => key.kid).map((key) => [key.kid, key]));
     certificatesExpiresAt = Date.now() + cacheSeconds * 1000;
     return certificates;
 }
@@ -35,10 +36,9 @@ async function verifyFirebaseToken(token, projectId) {
     const header = jsonPart(encodedHeader);
     const payload = jsonPart(encodedPayload);
     if (header.alg !== 'RS256' || !header.kid || payload.aud !== projectId || payload.iss !== `https://securetoken.google.com/${projectId}` || !payload.sub || payload.exp * 1000 <= Date.now()) throw new Error('Invalid token claims');
-    const pem = (await firebaseCertificates())[header.kid];
-    if (!pem) throw new Error('Unknown token signing key');
-    const der = Uint8Array.from(atob(pem.replace(/-----(BEGIN|END) CERTIFICATE-----|\s/g, '')), (character) => character.charCodeAt(0));
-    const key = await crypto.subtle.importKey('spki', der, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+    const jwk = (await firebaseCertificates())[header.kid];
+    if (!jwk) throw new Error('Unknown token signing key');
+    const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
     const valid = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, base64UrlDecode(encodedSignature), new TextEncoder().encode(`${encodedHeader}.${encodedPayload}`));
     if (!valid) throw new Error('Invalid token signature');
     return payload;
