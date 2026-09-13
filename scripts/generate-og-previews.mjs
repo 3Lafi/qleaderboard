@@ -2,7 +2,7 @@
 // WhatsApp does not run the SPA, so /b/{id} needs a real HTML response with the
 // board's own image and text before Firebase Hosting's SPA rewrite takes over.
 import { createHash } from 'node:crypto';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
@@ -156,9 +156,7 @@ function firebaseCliAccessToken() {
 }
 
 async function loadBoardsWithFirebaseCli() {
-    const accessToken = firebaseCliAccessToken();
-    if (!accessToken) throw new Error('Firebase CLI credentials are unavailable. Use GOOGLE_APPLICATION_CREDENTIALS instead.');
-    const response = await fetch('https://firestore.googleapis.com/v1/projects/wisam-3lafi/databases/(default)/documents:runQuery', {
+    const queryBoards = (accessToken) => fetch('https://firestore.googleapis.com/v1/projects/wisam-3lafi/databases/(default)/documents:runQuery', {
         method: 'POST',
         headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/json' },
         body: JSON.stringify({
@@ -168,6 +166,16 @@ async function loadBoardsWithFirebaseCli() {
             },
         }),
     });
+    let accessToken = firebaseCliAccessToken();
+    if (!accessToken) throw new Error('Firebase CLI credentials are unavailable. Use GOOGLE_APPLICATION_CREDENTIALS instead.');
+    let response = await queryBoards(accessToken);
+    // The Firebase CLI refreshes its OAuth token when it makes an authenticated
+    // command. This keeps local runs reliable without storing a second secret.
+    if (response.status === 401) {
+        execFileSync('npx', ['--yes', 'firebase-tools@latest', 'projects:list'], { cwd: root, stdio: 'ignore' });
+        accessToken = firebaseCliAccessToken();
+        response = await queryBoards(accessToken);
+    }
     if (!response.ok) throw new Error(`Firebase board query failed: ${response.status}`);
     const rows = await response.json();
     return rows.filter((row) => row.document).map((row) => {
