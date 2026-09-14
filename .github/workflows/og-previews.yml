@@ -48,11 +48,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
 
-      - name: Install browser renderer
-        if: steps.preview.outputs.needs_work == 'true'
-        run: npx playwright install --with-deps chromium
-
-      - name: Generate the public board pages and images
+      - name: Generate board metadata
         if: steps.preview.outputs.needs_work == 'true'
         run: |
           if [ "${{ github.event_name }}" = "repository_dispatch" ]; then

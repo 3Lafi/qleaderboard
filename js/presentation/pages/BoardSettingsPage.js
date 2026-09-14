@@ -299,7 +299,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
         submit.textContent=isEdit?'جارِ الحفظ…':'جارِ إنشاء اللوحة…';
         try {
             if(isEdit) {
-                const becamePublic = !settings.isPublic && newSettings.isPublic;
+                const previewTextChanged = newSettings.isPublic && (!settings.isPublic || ['name', 'schoolName', 'classLabel'].some(key => settings[key] !== newSettings[key]));
                 await BoardRepository.updateSettings(board.id,newSettings);
                 if (!form.isConnected) return;
                 // لا يجوز أن تحوّل أي خطوة لاحقة (مثل تحديث القائمة أو إرسال طلب
@@ -311,9 +311,8 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                     const nextCohort = newSettings.cohortId || '';
                     Object.assign(settings,newSettings);
                     board.settings=newSettings;
-                    // اللوحة الخاصة لا تملك رابط مشاركة بعد. عند نشرها لأول مرة
-                    // نبني بطاقة أول بنر فقط، ثم لا نطلب أي تحديثات لاحقة.
-                    if (becamePublic) {
+                    // حدّث نص المشاركة عند النشر أو تعديل اسم اللوحة وبياناتها.
+                    if (previewTextChanged) {
                         try { await OgPreviewTrigger.request(board.id); }
                         catch (error) { console.error('OG preview request failed', error); }
                     }
@@ -340,8 +339,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             } else {
                 const id=await BoardRepository.create(user.uid,newSettings);
                 if (!form.isConnected) return;
-                // تُلتقط بطاقة المشاركة مرة واحدة عند الإنشاء؛ لا نعيد بنائها عند
-                // تعديل البنر حتى لا تعرض تطبيقات المراسلة نسخة مخزنة مضللة.
+                // أنشئ بيانات مشاركة اللوحة باستخدام صورة وسام الموحّدة.
                 if (newSettings.isPublic) {
                     try { await OgPreviewTrigger.request(id); }
                     catch (error) { console.error('OG preview request failed', error); }

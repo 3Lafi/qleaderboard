@@ -1,16 +1,13 @@
 // Builds crawlable Open Graph pages for public boards.
 // WhatsApp does not run the SPA, so /b/{id} needs a real HTML response with the
 // board's own image and text before Firebase Hosting's SPA rewrite takes over.
-import { createHash } from 'node:crypto';
-import { execFileSync, spawn } from 'node:child_process';
-import { once } from 'node:events';
+import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { applicationDefault, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { DEFAULT_THEME_ID } from '../js/shared/banner-themes.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const outputDirectory = path.join(root, 'images', 'og');
@@ -20,15 +17,6 @@ const checkOnly = process.argv.includes('--check');
 const boardArgument = process.argv.find((argument) => argument.startsWith('--board='));
 const requestedBoardId = boardArgument?.slice('--board='.length) || null;
 const firebaseApiKey = 'AIzaSyCGW9PNgB-tiRzFbcrvK2aXa1Gs-RZ3GHg';
-const ogRendererStyle = [
-    readFileSync(path.join(root, 'css', 'main.css')),
-    readFileSync(path.join(root, 'css', 'wisam.css')),
-].join('\n');
-const ogRenderVersion = createHash('sha1')
-    .update('board-banner-screenshot-v4')
-    .update(ogRendererStyle)
-    .digest('hex');
-
 function escapeHtml(value) {
     return String(value ?? '')
         .replaceAll('&', '&amp;')
@@ -36,21 +24,6 @@ function escapeHtml(value) {
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#39;');
-}
-
-function boardHash(board) {
-    return createHash('sha1')
-        .update([ogRenderVersion, board.bannerVisual, board.name, board.schoolName, board.classLabel].join('\u0000'))
-        .digest('hex')
-        .slice(0, 10);
-}
-
-function stableSerialize(value) {
-    if (Array.isArray(value)) return `[${value.map(stableSerialize).join(',')}]`;
-    if (value && typeof value === 'object') {
-        return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stableSerialize(value[key])}`).join(',')}}`;
-    }
-    return JSON.stringify(value ?? null);
 }
 
 function updateMeta(html, property, value) {
@@ -63,7 +36,9 @@ function pageHtml(indexHtml, board, imageName) {
     const title = `${board.name} — لوحة حفظ القرآن`;
     const description = [board.schoolName, board.classLabel].filter(Boolean).join(' — ')
         || 'تابع تقدّم حفظ القرآن الكريم مباشرة على لوحة وسام';
+    indexHtml = indexHtml.replace(/<meta (?:property="og:[^"]+"|name="twitter:[^"]+")[^>]*>\s*/g, '');
     let html = indexHtml.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
+    html = updateMeta(html, 'og:type', 'website');
     html = updateMeta(html, 'og:title', title);
     html = updateMeta(html, 'og:description', description);
     html = updateMeta(html, 'og:url', `${siteUrl}/b/${board.id}`);
@@ -82,62 +57,13 @@ function pageHtml(indexHtml, board, imageName) {
     return html;
 }
 
-async function startRendererServer() {
-    const port = '4173';
-    const server = spawn(process.execPath, ['scripts/dev-server.mjs'], {
-        cwd: root,
-        env: { ...process.env, PORT: port, HOST: '127.0.0.1' },
-        stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    let errors = '';
-    server.stderr.on('data', (chunk) => { errors += chunk; });
-    const ready = new Promise((resolve, reject) => {
-        server.stdout.on('data', (chunk) => {
-            if (chunk.toString().includes('Wisam dev server running')) resolve();
-        });
-        server.once('error', reject);
-        server.once('exit', (code) => reject(new Error(errors || `OG renderer stopped with code ${code}`)));
-    });
-    await Promise.race([
-        ready,
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timed out starting the OG renderer.')), 10_000)),
-    ]);
-    return { port, stop: () => server.kill('SIGTERM') };
-}
-
-async function screenshotBoardBanner(page, board, destination, port) {
-    await page.goto(`http://127.0.0.1:${port}/b/${encodeURIComponent(board.id)}`, { waitUntil: 'domcontentloaded' });
-    const banner = page.locator('.board-banner');
-    await banner.waitFor({ state: 'visible', timeout: 20_000 });
-    await page.waitForFunction(() => {
-        const title = document.querySelector('.board-banner .banner-title')?.textContent?.trim();
-        return title && title !== 'جارِ التحميل...';
-    }, undefined, { timeout: 20_000 });
-    await page.evaluate(() => document.fonts.ready);
-    // Render the real board-banner DOM at the share-card dimensions. This keeps
-    // the app's current gradient, type, spacing and visibility rules—without
-    // recreating old decorations in a separate OG design.
-    await page.addStyleTag({ content: `
-        html, body { width: 1200px !important; min-height: 630px !important; padding: 0 !important; background: #f5f7f4 !important; }
-        #appSidebarHost, #appHeaderHost, #navProgress { display: none !important; }
-        .app-shell, .app-main-wrapper, #pageContent, #pageRoot { display: block !important; width: 1200px !important; min-width: 1200px !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
-        .public-board .board-banner { width: 1200px !important; min-height: 630px !important; height: 630px !important; margin: 0 !important; }
-        .public-board .board-banner .banner-title { max-width: 1000px !important; font-size: clamp(58px, 7vw, 84px) !important; line-height: 1.28 !important; }
-        .public-board .board-banner .banner-subtitle { max-width: 950px !important; font-size: clamp(26px, 2.8vw, 36px) !important; line-height: 1.6 !important; }
-    ` });
-    await banner.screenshot({ path: destination, type: 'jpeg', quality: 88 });
-}
-
 function normaliseBoard(id, settings) {
-    const board = {
+    return {
         id,
         name: String(settings.name || '').trim() || 'لوحة حفظ القرآن',
         schoolName: String(settings.schoolName || '').trim(),
         classLabel: String(settings.classLabel || '').trim(),
-        themeId: settings.banner?.themeId || DEFAULT_THEME_ID,
-        bannerVisual: stableSerialize(settings.banner || {}),
     };
-    return { ...board, hash: boardHash(board) };
 }
 
 async function loadRequestedPublicBoard(id) {
@@ -147,7 +73,7 @@ async function loadRequestedPublicBoard(id) {
     const document = await response.json();
     const data = decodeFirestoreFields(document.fields || {});
     if (data.settings?.isPublic !== true) return null;
-    return normaliseBoard(id, data.initialBanner || data.settings || {});
+    return normaliseBoard(id, data.settings || {});
 }
 
 function decodeFirestoreValue(value) {
@@ -198,7 +124,7 @@ async function loadBoardsWithFirebaseCli() {
     return rows.filter((row) => row.document).map((row) => {
         const document = row.document;
         const data = decodeFirestoreFields(document.fields || {});
-        return normaliseBoard(document.name.split('/').at(-1), data.initialBanner || data.settings || {});
+        return normaliseBoard(document.name.split('/').at(-1), data.settings || {});
     });
 }
 
@@ -206,7 +132,7 @@ async function loadRequestedBoardWithServiceAccount(id) {
     const firebaseApp = initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'wisam-3lafi', credential: applicationDefault() });
     const document = await getFirestore(firebaseApp).collection('leaderboards').doc(id).get();
     if (!document.exists || document.data().settings?.isPublic !== true) return null;
-    return normaliseBoard(document.id, document.data().initialBanner || document.data().settings || {});
+    return normaliseBoard(document.id, document.data().settings || {});
 }
 
 async function loadBoards() {
@@ -220,7 +146,7 @@ async function loadBoards() {
     try {
         const firebaseApp = initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'wisam-3lafi', credential: applicationDefault() });
         const snapshot = await getFirestore(firebaseApp).collection('leaderboards').where('settings.isPublic', '==', true).get();
-        return snapshot.docs.map((document) => normaliseBoard(document.id, document.data().initialBanner || document.data().settings || {}));
+        return snapshot.docs.map((document) => normaliseBoard(document.id, document.data().settings || {}));
     } catch (error) {
         throw new Error(`Could not load public boards with the service account: ${error.message}`);
     }
@@ -231,16 +157,15 @@ const boards = await loadBoards();
 mkdirSync(outputDirectory, { recursive: true });
 mkdirSync(pageDirectory, { recursive: true });
 const indexHtml = readFileSync(path.join(root, 'index.html'), 'utf8');
-const expectedImages = new Set();
+const expectedImages = new Set(['wisam-universal-v1.jpg']);
 const expectedPages = new Set();
-const imagesToRender = [];
+
 const pagesToWrite = [];
 
 for (const board of boards) {
-    const imageName = `${board.id}.${board.hash}.jpg`;
+    const imageName = 'wisam-universal-v1.jpg';
     expectedImages.add(imageName);
     expectedPages.add(`${board.id}.html`);
-    if (!existsSync(path.join(outputDirectory, imageName))) imagesToRender.push({ ...board, imageName });
     const destination = path.join(pageDirectory, `${board.id}.html`);
     const html = pageHtml(indexHtml, board, imageName);
     if (!existsSync(destination) || readFileSync(destination, 'utf8') !== html) pagesToWrite.push({ destination, html });
@@ -258,25 +183,11 @@ const staleFiles = [
     ...staleImageNames.map((name) => path.join(outputDirectory, name)),
     ...stalePageNames.map((name) => path.join(pageDirectory, name)),
 ];
-const needsWork = imagesToRender.length + pagesToWrite.length + staleFiles.length > 0;
+const needsWork = pagesToWrite.length + staleFiles.length > 0;
 console.log(`public boards: ${boards.length}`);
-console.log(`to render: ${imagesToRender.length}, to write: ${pagesToWrite.length}, to prune: ${staleFiles.length}`);
+console.log(`to write: ${pagesToWrite.length}, to prune: ${staleFiles.length}`);
 console.log(`needs_work=${needsWork}`);
 if (checkOnly || !needsWork) process.exit(0);
 
 for (const file of staleFiles) rmSync(file);
 for (const page of pagesToWrite) writeFileSync(page.destination, page.html);
-if (imagesToRender.length > 0) {
-    const renderer = await startRendererServer();
-    try {
-        const { chromium } = await import('playwright');
-        const browser = await chromium.launch();
-        const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
-        for (const board of imagesToRender) {
-            await screenshotBoardBanner(page, board, path.join(outputDirectory, board.imageName), renderer.port);
-        }
-        await browser.close();
-    } finally {
-        renderer.stop();
-    }
-}
