@@ -299,6 +299,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
         submit.textContent=isEdit?'جارِ الحفظ…':'جارِ إنشاء اللوحة…';
         try {
             if(isEdit) {
+                const becamePublic = !settings.isPublic && newSettings.isPublic;
                 await BoardRepository.updateSettings(board.id,newSettings);
                 if (!form.isConnected) return;
                 // لا يجوز أن تحوّل أي خطوة لاحقة (مثل تحديث القائمة أو إرسال طلب
@@ -310,6 +311,9 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                     const nextCohort = newSettings.cohortId || '';
                     Object.assign(settings,newSettings);
                     board.settings=newSettings;
+                    // اللوحة الخاصة لا تملك رابط مشاركة بعد. عند نشرها لأول مرة
+                    // نبني بطاقة أول بنر فقط، ثم لا نطلب أي تحديثات لاحقة.
+                    if (becamePublic) OgPreviewTrigger.request(board.id).catch(error => console.error('OG preview request failed', error));
                     if (nextCohort) {
                         try {
                             await CohortRepository.linkProgram(nextCohort, board.id);
