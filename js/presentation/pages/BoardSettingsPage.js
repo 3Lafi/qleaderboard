@@ -313,7 +313,10 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                     board.settings=newSettings;
                     // اللوحة الخاصة لا تملك رابط مشاركة بعد. عند نشرها لأول مرة
                     // نبني بطاقة أول بنر فقط، ثم لا نطلب أي تحديثات لاحقة.
-                    if (becamePublic) OgPreviewTrigger.request(board.id).catch(error => console.error('OG preview request failed', error));
+                    if (becamePublic) {
+                        try { await OgPreviewTrigger.request(board.id); }
+                        catch (error) { console.error('OG preview request failed', error); }
+                    }
                     if (nextCohort) {
                         try {
                             await CohortRepository.linkProgram(nextCohort, board.id);
@@ -339,7 +342,10 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                 if (!form.isConnected) return;
                 // تُلتقط بطاقة المشاركة مرة واحدة عند الإنشاء؛ لا نعيد بنائها عند
                 // تعديل البنر حتى لا تعرض تطبيقات المراسلة نسخة مخزنة مضللة.
-                if (newSettings.isPublic) OgPreviewTrigger.request(id).catch(error => console.error('OG preview request failed', error));
+                if (newSettings.isPublic) {
+                    try { await OgPreviewTrigger.request(id); }
+                    catch (error) { console.error('OG preview request failed', error); }
+                }
                 await layout?.refreshUserBoards?.();
                 toast('تم إنشاء اللوحة. أضف أول طالب لتبدأ.','success');
                 navigate(`/edit/${id}/students`);
