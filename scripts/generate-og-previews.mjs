@@ -157,13 +157,13 @@ const boards = await loadBoards();
 mkdirSync(outputDirectory, { recursive: true });
 mkdirSync(pageDirectory, { recursive: true });
 const indexHtml = readFileSync(path.join(root, 'index.html'), 'utf8');
-const expectedImages = new Set(['wisam-universal-v1.jpg']);
+const expectedImages = new Set(['wisam-universal-v2.jpg']);
 const expectedPages = new Set();
 
 const pagesToWrite = [];
 
 for (const board of boards) {
-    const imageName = 'wisam-universal-v1.jpg';
+    const imageName = 'wisam-universal-v2.jpg';
     expectedImages.add(imageName);
     expectedPages.add(`${board.id}.html`);
     const destination = path.join(pageDirectory, `${board.id}.html`);
