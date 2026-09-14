@@ -9,7 +9,9 @@ function isConfigured() {
 // لا يصل أي مفتاح GitHub أو Cloudflare إلى المتصفح.
 async function request(boardId) {
     if (!isConfigured() || !auth.currentUser || !/^[a-z0-9]{8}$/.test(boardId)) return false;
-    const idToken = await auth.currentUser.getIdToken();
+    // قد تبقى جلسة المعلم مفتوحة لساعات؛ رمز جديد يضمن أن الـ Worker يقبل
+    // طلب التحديث فور إنشاء اللوحة أو تعديل بيانات المشاركة.
+    const idToken = await auth.currentUser.getIdToken(true);
     const response = await fetch(OG_PREVIEW_TRIGGER_URL, {
         method: 'POST',
         headers: { Authorization: `Bearer ${idToken}`, 'Content-Type': 'application/json' },
