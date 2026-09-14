@@ -43,6 +43,7 @@ jobs:
             node scripts/generate-og-previews.mjs --check --board="$board_id" | tee preview.log
           else
             node scripts/generate-og-previews.mjs --check | tee preview.log
+          fi
           echo "needs_work=$(sed -n 's/^needs_work=//p' preview.log)" >> "$GITHUB_OUTPUT"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
