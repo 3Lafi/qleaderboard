@@ -11,3 +11,4 @@ const services = { boards: BoardRepository, cohorts: CohortRepository, ogPreview
 const layout = new AppLayoutManager({ authState, ...services });
 const router = createRouter({ authState, layout, services });
 router.start();
+OgPreviewTrigger.start();

@@ -7,7 +7,7 @@ function isConfigured() {
 
 // يتحقق الـWorker من Firebase ID token وملكية اللوحة قبل أن يطلق GitHub Actions.
 // لا يصل أي مفتاح GitHub أو Cloudflare إلى المتصفح.
-async function request(boardId) {
+async function send(boardId) {
     if (!isConfigured() || !auth.currentUser || !/^[a-z0-9]{8}$/.test(boardId)) return false;
     // قد تبقى جلسة المعلم مفتوحة لساعات؛ رمز جديد يضمن أن الـ Worker يقبل
     // طلب التحديث فور إنشاء اللوحة أو تعديل بيانات المشاركة.
@@ -22,4 +22,47 @@ async function request(boardId) {
     return true;
 }
 
-export const OgPreviewTrigger = { request };
+const QUEUE_KEY = 'wisam-preview-pending';
+let running = false;
+function pending() {
+    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '{}'); }
+    catch { return {}; }
+}
+function save(queue) { localStorage.setItem(QUEUE_KEY, JSON.stringify(queue)); }
+
+async function flush() {
+    if (running || !auth.currentUser || !navigator.onLine) return;
+    running = true;
+    const uid = auth.currentUser.uid;
+    try {
+        for (const [id, entry] of Object.entries(pending())) {
+            if (entry.uid !== uid) continue;
+            try {
+                if (await send(id)) {
+                    const queue = pending();
+                    if (queue[id]?.version === entry.version) delete queue[id];
+                    save(queue);
+                }
+            } catch (error) {
+                console.error('Preview update will retry automatically', error);
+            }
+        }
+    } finally { running = false; }
+}
+
+async function request(boardId) {
+    if (!auth.currentUser || !/^[a-z0-9]{8}$/.test(boardId)) return false;
+    const queue = pending();
+    queue[boardId] = { uid: auth.currentUser.uid, version: crypto.randomUUID() };
+    save(queue);
+    await flush();
+    return !pending()[boardId];
+}
+
+function start() {
+    window.addEventListener('online', flush);
+    window.setInterval(flush, 30000);
+    void flush();
+}
+
+export const OgPreviewTrigger = { request, start };
