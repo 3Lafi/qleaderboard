@@ -27,8 +27,16 @@ npm run verify
 firebase deploy --only hosting:wisam --project wisam-3lafi
 ```
 
-Firebase `/b/{id}` remains the app route. Previously shared Firebase URLs and
-their existing static previews are retained for compatibility. The older
-`og-preview-trigger` Worker/workflow is retained for clients already open on old
-app versions; the current app no longer calls it or retries a preview queue.
-New links must be copied from board settings to use live previews.
+Every Firebase `/b/{id}` request redirects to the live Worker, including IDs
+created after deployment. This redirect takes priority over old static preview
+files. Browser visitors return through `/#/b/{id}`; the router replaces the
+fragment with `/b/{id}` client-side without making another HTTP request, so
+there is no redirect loop and address-bar links also have live previews.
+The service worker leaves public board navigations to the browser instead of
+serving a cached generic app document. The older
+`og-preview-trigger` endpoint only acknowledges requests from clients still
+open on old app versions, allowing their retry queues to clear. It does not
+read Firestore, verify tokens, or dispatch builds. The old workflow is manual
+export only and no longer listens for board creation events. The current app
+does not call the endpoint or maintain a preview queue.
+No per-board entry, build or manual action is needed for either link format.

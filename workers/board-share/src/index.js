@@ -20,7 +20,9 @@ function headers(contentType = 'text/html; charset=utf-8') {
 }
 
 function page({ title, description, boardId, shareUrl }) {
-    const appUrl = boardId ? `${APP_ORIGIN}/b/${boardId}` : APP_ORIGIN;
+    // Enter through the app shell. Its existing hash migration replaces this
+    // with /b/{id} client-side, avoiding another HTTP redirect to this Worker.
+    const appUrl = boardId ? `${APP_ORIGIN}/#/b/${boardId}` : APP_ORIGIN;
     return `<!doctype html>
 <html lang="ar" dir="rtl"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">

@@ -1,10 +1,7 @@
-# Keeps link previews in sync with public boards. WhatsApp reads the static page
-# at /b/{boardId}; it never evaluates the JavaScript application.
-name: Refresh board link previews
+# Manual legacy export only. Live previews never need a build or deployment.
+name: Export legacy board previews
 
 on:
-  repository_dispatch:
-    types: [board-created]
   workflow_dispatch:
 
 concurrency:

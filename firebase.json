@@ -82,6 +82,11 @@
     ],
     "redirects": [
       {
+        "source": "/b/:boardId",
+        "destination": "https://wisam-share.wisam-3lafi.workers.dev/b/:boardId",
+        "type": 302
+      },
+      {
         "source": "/almanhaj",
         "destination": "/",
         "type": 301
