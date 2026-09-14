@@ -2,7 +2,10 @@
 # at /b/{boardId}; it never evaluates the JavaScript application.
 name: Refresh board link previews
 
-on: workflow_dispatch
+on:
+  repository_dispatch:
+    types: [board-created]
+  workflow_dispatch:
 
 concurrency:
   group: board-og-previews
@@ -34,7 +37,12 @@ jobs:
       - name: Check whether a preview changed
         id: preview
         run: |
-          node scripts/generate-og-previews.mjs --check | tee preview.log
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            board_id='${{ github.event.client_payload.boardId }}'
+            [[ "$board_id" =~ ^[a-z0-9]{8}$ ]] || { echo "Invalid board id"; exit 1; }
+            node scripts/generate-og-previews.mjs --check --board="$board_id" | tee preview.log
+          else
+            node scripts/generate-og-previews.mjs --check | tee preview.log
           echo "needs_work=$(sed -n 's/^needs_work=//p' preview.log)" >> "$GITHUB_OUTPUT"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
@@ -45,7 +53,12 @@ jobs:
 
       - name: Generate the public board pages and images
         if: steps.preview.outputs.needs_work == 'true'
-        run: node scripts/generate-og-previews.mjs
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            node scripts/generate-og-previews.mjs --board='${{ github.event.client_payload.boardId }}'
+          else
+            node scripts/generate-og-previews.mjs
+          fi
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
 

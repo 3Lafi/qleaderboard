@@ -12,6 +12,7 @@ import { autoPriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMe
 export default async function BoardSettingsPage(container, { toast, params = {}, navigate, layout, user, services, setTitle, signal, refresh }) {
     const BoardRepository = services.boards;
     const CohortRepository = services.cohorts;
+    const OgPreviewTrigger = services.ogPreview;
     const isEdit = Boolean(params.boardId);
     let board = null;
     setTitle(`${isEdit ? 'إعدادات اللوحة' : 'لوحة جديدة'} — وسام`);
@@ -332,6 +333,9 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             } else {
                 const id=await BoardRepository.create(user.uid,newSettings);
                 if (!form.isConnected) return;
+                // تُلتقط بطاقة المشاركة مرة واحدة عند الإنشاء؛ لا نعيد بنائها عند
+                // تعديل البنر حتى لا تعرض تطبيقات المراسلة نسخة مخزنة مضللة.
+                if (newSettings.isPublic) OgPreviewTrigger.request(id).catch(error => console.error('OG preview request failed', error));
                 await layout?.refreshUserBoards?.();
                 toast('تم إنشاء اللوحة. أضف أول طالب لتبدأ.','success');
                 navigate(`/edit/${id}/students`);

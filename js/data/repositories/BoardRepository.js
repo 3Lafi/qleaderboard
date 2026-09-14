@@ -54,6 +54,8 @@ export const BoardRepository = {
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             settings: initialSettings,
+            // تبقى بطاقة المشاركة مخلّدة عند أول بنر؛ تعديلات البانر اللاحقة
+            // لا تغيّر الرابط الذي سبق أن خزّنته تطبيقات المراسلة.
             initialBanner: {
                 name: initialSettings.name,
                 schoolName: initialSettings.schoolName,

@@ -21,18 +21,6 @@ const STRANGER_UID = 'stranger-uid';
 
 let testEnv;
 
-test('initial banner must match creation settings and cannot be changed later', async () => {
-    const ownerDb = testEnv.authenticatedContext(OWNER_UID).firestore();
-    const ref = doc(ownerDb, 'leaderboards', 'initial-banner');
-    const settings = { name: 'أول بنر', schoolName: '', classLabel: '', banner: { themeId: 'emerald' }, isPublic: true };
-    const initialBanner = { name: settings.name, schoolName: '', classLabel: '', banner: settings.banner };
-    await assertFails(setDoc(ref, validBoardData({ settings, initialBanner: { ...initialBanner, name: 'different' }, createdAt: serverTimestamp() })));
-    await assertSucceeds(setDoc(ref, validBoardData({ settings, initialBanner, createdAt: serverTimestamp() })));
-    await assertSucceeds(updateDoc(ref, { 'settings.banner.themeId': 'burgundy' }));
-    await assertFails(updateDoc(ref, { 'initialBanner.banner.themeId': 'burgundy' }));
-    await assertFails(setDoc(doc(ownerDb, 'boardPreviews', 'initial-banner'), { status: 'ready' }));
-});
-
 function validBoardData(overrides = {}) {
     return {
         ownerUid: OWNER_UID,

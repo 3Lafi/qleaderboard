@@ -147,7 +147,7 @@ async function loadRequestedPublicBoard(id) {
     const document = await response.json();
     const data = decodeFirestoreFields(document.fields || {});
     if (data.settings?.isPublic !== true) return null;
-    return normaliseBoard(id, data.settings || {});
+    return normaliseBoard(id, data.initialBanner || data.settings || {});
 }
 
 function decodeFirestoreValue(value) {
@@ -197,7 +197,8 @@ async function loadBoardsWithFirebaseCli() {
     const rows = await response.json();
     return rows.filter((row) => row.document).map((row) => {
         const document = row.document;
-        return normaliseBoard(document.name.split('/').at(-1), decodeFirestoreValue(document.fields?.settings));
+        const data = decodeFirestoreFields(document.fields || {});
+        return normaliseBoard(document.name.split('/').at(-1), data.initialBanner || data.settings || {});
     });
 }
 
@@ -205,7 +206,7 @@ async function loadRequestedBoardWithServiceAccount(id) {
     const firebaseApp = initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'wisam-3lafi', credential: applicationDefault() });
     const document = await getFirestore(firebaseApp).collection('leaderboards').doc(id).get();
     if (!document.exists || document.data().settings?.isPublic !== true) return null;
-    return normaliseBoard(document.id, document.data().settings || {});
+    return normaliseBoard(document.id, document.data().initialBanner || document.data().settings || {});
 }
 
 async function loadBoards() {
@@ -219,7 +220,7 @@ async function loadBoards() {
     try {
         const firebaseApp = initializeApp({ projectId: process.env.GCLOUD_PROJECT || 'wisam-3lafi', credential: applicationDefault() });
         const snapshot = await getFirestore(firebaseApp).collection('leaderboards').where('settings.isPublic', '==', true).get();
-        return snapshot.docs.map((document) => normaliseBoard(document.id, document.data().settings || {}));
+        return snapshot.docs.map((document) => normaliseBoard(document.id, document.data().initialBanner || document.data().settings || {}));
     } catch (error) {
         throw new Error(`Could not load public boards with the service account: ${error.message}`);
     }
