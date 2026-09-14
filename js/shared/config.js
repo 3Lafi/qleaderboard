@@ -5,6 +5,5 @@ export const LIMITS = {
     MAX_BOARD_NAME_LENGTH: 100,
 };
 
-// خدمة خلفية داخلية فقط: تطلب بناء صورة المشاركة عند إنشاء لوحة عامة.
-// لا تُعرض Cloudflare داخل التطبيق ولا يحمل المتصفح أي مفتاح نشر.
-export const OG_PREVIEW_TRIGGER_URL = 'https://wisam-og-trigger.wisam-3lafi.workers.dev';
+// صفحة المشاركة تقرأ بيانات اللوحة عند الطلب، دون نشر جديد أو مفتاح في المتصفح.
+export const BOARD_SHARE_ORIGIN = 'https://wisam-share.wisam-3lafi.workers.dev';

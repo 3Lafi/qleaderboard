@@ -1,4 +1,5 @@
 // عناصر واجهة مشتركة: تنبيهات، حوارات تأكيد، هيدر، أدوات مساعدة
+import { BOARD_SHARE_ORIGIN } from '../../shared/config.js';
 
 export function escapeHtml(value) {
     return String(value ?? '')
@@ -176,7 +177,7 @@ export async function copyToClipboard(text) {
 
 // رابط المشاركة العام للوحة
 export function boardShareUrl(boardId) {
-    return `${location.origin}/b/${boardId}`;
+    return `${BOARD_SHARE_ORIGIN}/b/${encodeURIComponent(boardId)}`;
 }
 
 function trapModalFocus(event, overlay) {

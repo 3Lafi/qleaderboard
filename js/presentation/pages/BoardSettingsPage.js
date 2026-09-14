@@ -12,7 +12,6 @@ import { autoPriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMe
 export default async function BoardSettingsPage(container, { toast, params = {}, navigate, layout, user, services, setTitle, signal, refresh }) {
     const BoardRepository = services.boards;
     const CohortRepository = services.cohorts;
-    const OgPreviewTrigger = services.ogPreview;
     const isEdit = Boolean(params.boardId);
     let board = null;
     setTitle(`${isEdit ? 'إعدادات اللوحة' : 'لوحة جديدة'} — وسام`);
@@ -299,11 +298,9 @@ export default async function BoardSettingsPage(container, { toast, params = {},
         submit.textContent=isEdit?'جارِ الحفظ…':'جارِ إنشاء اللوحة…';
         try {
             if(isEdit) {
-                const previewTextChanged = newSettings.isPublic && (!settings.isPublic || ['name', 'schoolName', 'classLabel'].some(key => settings[key] !== newSettings[key]));
                 await BoardRepository.updateSettings(board.id,newSettings);
                 if (!form.isConnected) return;
-                // لا يجوز أن تحوّل أي خطوة لاحقة (مثل تحديث القائمة أو إرسال طلب
-                // OG) نجاح كتابة Firestore إلى رسالة «تعذر الحفظ» للمعلّم.
+                // لا يجوز أن تحوّل أي خطوة لاحقة نجاح كتابة Firestore إلى خطأ حفظ.
                 try {
                     toast([...oldSurahs].some(n=>!newSettings.scope.surahNumbers.includes(n))?'تم الحفظ — سجلات الحفظ خارج الخطة الجديدة محفوظة':'تم حفظ التغييرات','success');
                     // ربط/فصل الدفعة ثم نسخ أسماء أعضائها إلى اللوحة
@@ -311,11 +308,6 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                     const nextCohort = newSettings.cohortId || '';
                     Object.assign(settings,newSettings);
                     board.settings=newSettings;
-                    // حدّث نص المشاركة عند النشر أو تعديل اسم اللوحة وبياناتها.
-                    if (previewTextChanged) {
-                        try { await OgPreviewTrigger.request(board.id); }
-                        catch (error) { console.error('OG preview request failed', error); }
-                    }
                     if (nextCohort) {
                         try {
                             await CohortRepository.linkProgram(nextCohort, board.id);
@@ -339,11 +331,6 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             } else {
                 const id=await BoardRepository.create(user.uid,newSettings);
                 if (!form.isConnected) return;
-                // أنشئ بيانات مشاركة اللوحة باستخدام صورة وسام الموحّدة.
-                if (newSettings.isPublic) {
-                    try { await OgPreviewTrigger.request(id); }
-                    catch (error) { console.error('OG preview request failed', error); }
-                }
                 await layout?.refreshUserBoards?.();
                 toast('تم إنشاء اللوحة. أضف أول طالب لتبدأ.','success');
                 navigate(`/edit/${id}/students`);
