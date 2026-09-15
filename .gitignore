@@ -5,6 +5,7 @@ Thumbs.db
 
 node_modules/
 .firebase/
+.wrangler/
 *.log
 .env
 .env.*
