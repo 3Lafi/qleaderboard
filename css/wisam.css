@@ -2097,3 +2097,27 @@ body:has(.sheet-expanded[open]) { overflow:hidden; }
 }
 
 .feedback-icon .ui-icon { width: 40px; height: 40px; }
+
+/* Public boards are a focused destination for students and families. */
+.board-share-button { cursor:pointer; font:inherit; }
+.guest-board-view .app-sidebar,
+.guest-board-view #appHeaderHost { display:none; }
+.guest-board-view .page-content { max-width:1180px; margin-inline:auto; padding-top:24px; }
+.guest-board-view .app-main-wrapper { background:linear-gradient(180deg,#f7faf7 0,#f5f7f3 360px,#f7f8f5 100%); }
+.guest-board-brand { display:flex; justify-content:center; margin:0 0 20px; }
+.guest-board-brand a { display:inline-flex; align-items:center; gap:11px; color:var(--primary-dark); text-decoration:none; }
+.guest-board-brand img { object-fit:contain; }
+.guest-board-brand strong,
+.guest-board-brand small { display:block; }
+.guest-board-brand strong { font-size:1.15rem; line-height:1.3; }
+.guest-board-brand small { margin-top:2px; color:var(--text-muted); font-size:.7rem; }
+.public-board .board-directory { padding:26px; border:1px solid var(--border-subtle); border-radius:20px; background:rgba(255,255,255,.88); box-shadow:var(--shadow-panel); }
+.public-board .board-directory .board-tools { margin:0 0 18px; }
+.public-board .board-directory .eyebrow { margin-bottom:5px; }
+
+@media (max-width:760px) {
+    .guest-board-view .page-content { padding:14px 14px 28px; }
+    .guest-board-brand { margin-bottom:14px; }
+    .guest-board-brand img { width:38px; height:38px; }
+    .public-board .board-directory { padding:18px 14px; border-radius:16px; }
+}

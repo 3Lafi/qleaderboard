@@ -1,7 +1,7 @@
 // Board setup: three focused steps, shared by creation and editing.
 import { defaultSettings, sanitizeSettings } from '../../domain/models/BoardSettings.js';
 import { SURAHS } from '../../shared/quran-data.js';
-import { boardShareUrl, copyToClipboard, confirmDialog, escapeHtml } from '../views/ui.js';
+import { confirmDialog, escapeHtml } from '../views/ui.js';
 import { mountScopePicker } from '../views/ScopePickerView.js';
 import { mountBannerDesigner } from '../views/BannerDesignerView.js';
 import { scopeSummaryText } from '../views/SurahPickerView.js';
@@ -59,7 +59,6 @@ export default async function BoardSettingsPage(container, { toast, params = {},
     container.innerHTML = `
         <section class="board-setup ${isEdit ? 'board-settings' : ''}">
             <div class="setup-heading"><div>${isEdit ? `<p class="settings-board-name" id="settingsBoardName">${escapeHtml(settings.name)}</p>` : ''}<h1>${isEdit ? 'إعدادات اللوحة' : 'لننشئ لوحة جديدة'}</h1><p>${isEdit ? 'راجع بيانات اللوحة وخطة الحفظ وخيارات المشاركة.' : 'ثلاث خطوات بسيطة، ثم تبدأ رحلة طلابك.'}</p></div><span class="setup-step-count" id="setupStepCount" ${isEdit ? 'hidden' : ''}>الخطوة 1 من 3</span></div>
-            ${isEdit ? `<section class="settings-share" aria-labelledby="shareHeading"><div><h2 id="shareHeading">مشاركة اللوحة</h2><p id="shareHint"></p></div><div class="settings-share-controls" id="shareControls"><input id="shareUrl" type="url" aria-label="رابط اللوحة" readonly dir="ltr" value="${escapeHtml(boardShareUrl(board.id))}"><button type="button" class="btn btn-primary" id="copyBoardLink">نسخ الرابط</button></div><button type="button" class="btn btn-secondary" id="openVisibility">خيارات الظهور</button></section>` : ''}
             <nav class="setup-stepper" aria-label="خطوات إعداد اللوحة">${steps.map((label,i)=>`<button type="button" data-setup-step="${i}" ${i===0 ? 'aria-current="step"' : ''}>${isEdit ? '' : `<span>${i+1}</span>`}<strong>${label}</strong></button>`).join('')}</nav>
             <div class="setup-layout">
                 <form id="boardForm" class="setup-form" novalidate>
@@ -115,25 +114,6 @@ export default async function BoardSettingsPage(container, { toast, params = {},
     const form = container.querySelector('#boardForm');
     const nameInput = container.querySelector('#fName');
     const error = container.querySelector('#setupError');
-
-    function refreshShare() {
-        if (!isEdit) return;
-        const pendingVisibility = container.querySelector('#fPublic').checked !== settings.isPublic;
-        container.querySelector('#shareControls').hidden = !settings.isPublic || pendingVisibility;
-        container.querySelector('#shareHint').textContent = pendingVisibility
-            ? 'احفظ تغيير الظهور أولاً لتحديث خيارات المشاركة.'
-            : settings.isPublic ? 'انسخ الرابط وأرسله لأولياء الأمور لمتابعة الحفظ والأوسمة.' : 'اللوحة خاصة. اختر «كل من لديه الرابط» واحفظ التغيير لتفعيل المشاركة.';
-    }
-    if (isEdit) {
-        container.querySelector('#copyBoardLink').onclick=()=>copyToClipboard(boardShareUrl(board.id));
-        container.querySelector('#shareUrl').onclick=event=>event.target.select();
-        container.querySelector('#openVisibility').onclick=()=>{
-            if (saving) return;
-            showStep(2,false); container.querySelector('#fPublic').focus();
-        };
-        refreshShare();
-    }
-
 
     function formSnapshot() {
         return JSON.stringify({
@@ -255,17 +235,17 @@ export default async function BoardSettingsPage(container, { toast, params = {},
     loadCohorts();
 
     // نسخ أسماء الدفعة إلى اللوحة (مع ربط كل طالب بعضوه)
-    async function syncCohortStudents(cohortId) {
+    async function syncCohortStudents(cohortId, targetBoardId = board?.id, currentStudents = board?.students || {}) {
         const cohort = myCohorts.find(c => String(c.id) === String(cohortId));
-        if (!cohort) return 0;
-        const existingByName = new Set(Object.values(board?.students || {}).map(s => String(s?.name || '').trim()));
-        const linked = new Set(Object.values(board?.students || {}).map(s => String(s?.cohortStudentId || '')).filter(Boolean));
-        let count = Object.keys(board?.students || {}).length;
+        if (!cohort || !targetBoardId) return 0;
+        const existingByName = new Set(Object.values(currentStudents).map(s => String(s?.name || '').trim()));
+        const linked = new Set(Object.values(currentStudents).map(s => String(s?.cohortStudentId || '')).filter(Boolean));
+        let count = Object.keys(currentStudents).length;
         let added = 0;
         for (const member of cohort.listStudents()) {
             if (linked.has(String(member.id)) || existingByName.has(member.name)) continue;
             try {
-                await BoardRepository.addStudent(board.id, member.name, count, { cohortStudentId: member.id });
+                await BoardRepository.addStudent(targetBoardId, member.name, count, { cohortStudentId: member.id });
                 count += 1; added += 1;
             } catch (error) { console.error('cohort import failed', member.name, error); }
         }
@@ -320,7 +300,6 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                     }
                     oldSurahs.clear(); newSettings.scope.surahNumbers.forEach(n=>oldSurahs.add(n));
                     layout?.setActiveBoard?.(board);
-                    refreshShare();
                     savedSnapshot = formSnapshot(); saveFailed = false;
                     container.querySelector('#settingsBoardName').textContent = newSettings.name;
                 } catch (afterSaveError) {
@@ -331,8 +310,15 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             } else {
                 const id=await BoardRepository.create(user.uid,newSettings);
                 if (!form.isConnected) return;
+                let addedFromCohort = 0;
+                if (newSettings.cohortId) {
+                    try {
+                        await CohortRepository.linkProgram(newSettings.cohortId, id);
+                        addedFromCohort = await syncCohortStudents(newSettings.cohortId, id, {});
+                    } catch (error) { console.error(error); }
+                }
                 await layout?.refreshUserBoards?.();
-                toast('تم إنشاء اللوحة. أضف أول طالب لتبدأ.','success');
+                toast(addedFromCohort ? `تم إنشاء اللوحة وأُضيف ${addedFromCohort} طالباً من الدفعة.` : 'تم إنشاء اللوحة. أضف أول طالب لتبدأ.','success');
                 navigate(`/edit/${id}/students`);
             }
         } catch(err) {saveFailed = true;console.error(err);if(form.isConnected) reportError('تعذر حفظ اللوحة. اختياراتك محفوظة هنا؛ حاول مرة أخرى.');}

@@ -25,6 +25,7 @@ export class Leaderboard {
         this.ownerUid = data.ownerUid;
         this.createdAt = data.createdAt || null;
         this.updatedAt = data.updatedAt || null;
+        this.previewRevision = data.previewRevision || '';
         this.settings = {
             name: data.settings?.name || '',
             schoolName: data.settings?.schoolName || '',

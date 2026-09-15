@@ -131,6 +131,10 @@ test('HEAD returns the same status and headers without a body', async () => {
 
 test('share links consistently use the Cloudflare domain', () => {
     assert.equal(shareUrl, 'https://wisam-share.wisam-3lafi.workers.dev/b/newboard');
+    assert.equal(
+        boardShareUrl('newboard', 'fresh preview'),
+        'https://wisam-share.wisam-3lafi.workers.dev/b/newboard?r=fresh%20preview'
+    );
 });
 
 test('old clients clear their preview queue without credentials or deployment dispatch', async () => {

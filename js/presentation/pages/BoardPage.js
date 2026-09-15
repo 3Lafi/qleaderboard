@@ -15,31 +15,37 @@ export default function BoardPage(container, { toast, params, layout, user, serv
     let rankedStudents = [];
     let searchText = '', studentFilter = 'all';
     let board = null;
+    const guestView = !user;
+    layout?.setGuestBoardView?.(guestView);
 
     function mountBoard() {
     container.innerHTML = `
         <div id="pageRoot" class="public-board">
+            ${guestView ? `<div class="guest-board-brand"><a href="/" aria-label="وسام — الرئيسية"><img src="/images/app-icons/badge-v10-192.png" width="44" height="44" alt=""><span><strong>وسام</strong><small>متابعة حفظ القرآن الكريم</small></span></a></div>` : ''}
             ${bannerHeader({
                 title: 'جارِ التحميل...',
                 className: 'board-banner',
             })}
             ${skeletonCards(3)}
-            <div class="board-tools">
-                <div>
-                    <h2>رحلة طلابنا</h2>
-                    <p id="studentCount"></p>
+            <section class="board-directory" aria-labelledby="boardDirectoryTitle">
+                <div class="board-tools">
+                    <div>
+                        <span class="eyebrow">تقدّم الحلقة</span>
+                        <h2 id="boardDirectoryTitle">رحلة طلابنا</h2>
+                        <p id="studentCount"></p>
+                    </div>
+                    <label class="badge-search">
+                        <span>ابحث بالاسم</span>
+                        <input type="search" id="boardStudentSearch" aria-label="ابحث عن طالب في اللوحة" placeholder="اسم الطالب…">
+                    </label>
                 </div>
-                <label class="badge-search">
-                    <span>الطالب</span>
-                    <input type="search" id="boardStudentSearch" aria-label="ابحث عن طالب في اللوحة" placeholder="ابحث عن طالب…">
-                </label>
-            </div>
-            <div class="board-student-filters" role="group" aria-label="تصفية الطلاب">
-                <button type="button" data-student-filter="all" aria-pressed="true">الجميع <span id="countAll" class="numeric-value">0</span></button>
-                <button type="button" data-student-filter="completed" aria-pressed="false">أتموا الحفظ <span id="countCompleted" class="numeric-value">0</span></button>
-                <button type="button" data-student-filter="learning" aria-pressed="false">يواصلون الحفظ <span id="countLearning" class="numeric-value">0</span></button>
-            </div>
-            <section id="studentsGrid" class="grid"></section>
+                <div class="board-student-filters" role="group" aria-label="تصفية الطلاب">
+                    <button type="button" data-student-filter="all" aria-pressed="true">الجميع <span id="countAll" class="numeric-value">0</span></button>
+                    <button type="button" data-student-filter="completed" aria-pressed="false">أتموا الحفظ <span id="countCompleted" class="numeric-value">0</span></button>
+                    <button type="button" data-student-filter="learning" aria-pressed="false">يواصلون الحفظ <span id="countLearning" class="numeric-value">0</span></button>
+                </div>
+                <section id="studentsGrid" class="grid"></section>
+            </section>
         </div>
     `;
 
@@ -206,5 +212,8 @@ export default function BoardPage(container, { toast, params, layout, user, serv
         );
     }
 
-    return unsubscribe;
+    return () => {
+        unsubscribe();
+        layout?.setGuestBoardView?.(false);
+    };
 }

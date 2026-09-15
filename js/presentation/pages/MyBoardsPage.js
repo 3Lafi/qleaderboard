@@ -1,5 +1,5 @@
 // لوحاتي: قائمة اللوحات الخاصة بالمعلم مع إجراءات سريعة
-import { escapeHtml } from '../views/ui.js';
+import { boardShareUrl, copyToClipboard, escapeHtml } from '../views/ui.js';
 import { normalizeArabic } from '../../shared/text-utils.js';
 import { createFeedbackState } from '../layout/FeedbackStateView.js';
 
@@ -122,6 +122,13 @@ export default async function MyBoardsPage(container, { layout, user, services, 
         renderBoards();
     }));
 
+    grid.addEventListener('click', event => {
+        const button = event.target.closest('[data-share-board]');
+        if (!button) return;
+        const board = boards.find(item => item.id === button.dataset.shareBoard);
+        if (board) copyToClipboard(boardShareUrl(board.id, board.previewRevision));
+    });
+
     renderBoards();
 }
 
@@ -138,7 +145,7 @@ function boardCardHtml(board) {
             </div>
             <div class="board-actions">
                 <a href="/edit/${board.id}/students" class="btn btn-primary btn-sm">جدول المتابعة</a>
-                ${s.isPublic ? `<a href="/b/${board.id}" class="btn btn-secondary btn-sm">عرض اللوحة</a>` : ''}
+                ${s.isPublic ? `<button type="button" class="btn btn-secondary btn-sm board-share-button" data-share-board="${escapeHtml(board.id)}">مشاركة اللوحة</button>` : ''}
                 <a href="/edit/${board.id}" class="board-settings-link">إعدادات اللوحة <span aria-hidden="true">←</span></a>
             </div>
         </div>`;

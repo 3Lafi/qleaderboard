@@ -176,8 +176,9 @@ export async function copyToClipboard(text) {
 }
 
 // رابط المشاركة العام للوحة
-export function boardShareUrl(boardId) {
-    return `${BOARD_SHARE_ORIGIN}/b/${encodeURIComponent(boardId)}`;
+export function boardShareUrl(boardId, previewRevision = '') {
+    const url = `${BOARD_SHARE_ORIGIN}/b/${encodeURIComponent(boardId)}`;
+    return previewRevision ? `${url}?r=${encodeURIComponent(String(previewRevision))}` : url;
 }
 
 function trapModalFocus(event, overlay) {

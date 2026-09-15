@@ -129,6 +129,12 @@ export class AppLayoutManager {
         this.renderHeader();
     }
 
+    setGuestBoardView(enabled) {
+        const shell = document.getElementById('appShell');
+        shell?.classList.toggle('guest-board-view', Boolean(enabled));
+        if (enabled) this.closeSidebar();
+    }
+
     renderHeader(user = this.authState.user()) {
         updateAppHeader(document.getElementById('appHeaderHost'), {
             activeKey: this.currentActiveKey, board: this.activeBoard, user, studentsNav: this.studentsNav, trail: this.locationTrail
