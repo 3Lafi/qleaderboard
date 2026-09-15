@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { rankStudents } from '../js/domain/usecases/RankStudents.js';
+import { rankStudents, sortTrackingStudents } from '../js/domain/usecases/RankStudents.js';
 
 function student(overrides) {
     return { name: '', progress: 0, isCompleted: false, completedDate: null, ...overrides };
@@ -36,4 +36,14 @@ test('does not mutate the input array', () => {
     const original = [...list];
     rankStudents(list);
     assert.deepEqual(list, original);
+});
+
+test('tracking table puts visible students before hidden students', () => {
+    const list = [
+        student({ name: 'أحمد', hidden: true }),
+        student({ name: 'خالد', hidden: false }),
+        student({ name: 'بدر', hidden: true }),
+        student({ name: 'سالم' }),
+    ];
+    assert.deepEqual(sortTrackingStudents(list).map(s => s.name), ['خالد', 'سالم', 'أحمد', 'بدر']);
 });

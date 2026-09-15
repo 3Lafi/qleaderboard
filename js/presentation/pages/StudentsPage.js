@@ -1,6 +1,7 @@
 import { uiIcon } from '../views/InterfaceIcons.js';
 import { Student } from '../../domain/models/Student.js';
 import { createMemorizationRecorder } from '../../domain/usecases/MemorizationRecorder.js';
+import { sortTrackingStudents } from '../../domain/usecases/RankStudents.js';
 import { resolvePriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMemorization.js';
 import { confirmDialog, promptDialog, escapeHtml, formatProgress } from '../views/ui.js';
 import { surahName, expandScope } from '../../shared/quran-data.js';
@@ -44,9 +45,7 @@ export default async function StudentsPage(container, { toast, params, layout, u
 
     // مزامنة قسم طلاب اللوحة في الشريط الجانبي.
     // اللوحات الخاصة تُعرض بلا روابط (ملف الطالب غير منشور) لكن يبقى زر الإضافة متاحاً.
-    const rosterEntries = () => Object.keys(board.students)
-        .map(student)
-        .sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    const rosterEntries = () => sortTrackingStudents(Object.keys(board.students).map(student));
 
     const syncStudentsNav = () => {
         layout?.setStudentsNav({
@@ -221,7 +220,7 @@ export default async function StudentsPage(container, { toast, params, layout, u
     }
 
     function renderTable() {
-        const all = Object.keys(board.students).map(student).sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+        const all = sortTrackingStudents(Object.keys(board.students).map(student));
         const students = all.filter(s => matchesStudentName(s.name, searchInput.value));
         const columns = visibleSurahs();
 

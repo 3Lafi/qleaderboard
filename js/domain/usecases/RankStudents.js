@@ -13,6 +13,12 @@ export function rankStudents(students) {
     });
 }
 
+// ترتيب جدول المعلم: الطلاب الظاهرون أولاً، ثم المخفيون، وأبجدياً داخل كل مجموعة.
+export function sortTrackingStudents(students) {
+    return [...students].sort((a, b) => Number(a.hidden === true) - Number(b.hidden === true)
+        || a.name.localeCompare(b.name, 'ar'));
+}
+
 function toMillis(ts) {
     if (!ts) return null;
     if (typeof ts.toMillis === 'function') return ts.toMillis();
