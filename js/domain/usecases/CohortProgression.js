@@ -6,9 +6,30 @@
 // 3) الطالب الذي أتمّ برنامجاً ينتقل إلى **البرنامج التالي في الترتيب** إن لم يكن فيه.
 //    لا يُنقل إلى برامج أبعد، ولا يُنقل من برنامج لم يتمّه.
 import { normalizeArabic } from '../../shared/text-utils.js';
-import { autoPriorSurahs } from './PriorMemorization.js';
+import { CURRICULUM_LEVELS, CURRICULUM_STAGES } from '../../shared/curriculum-data.js';
 
 const norm = name => normalizeArabic(name).replace(/\s+/g, ' ').trim();
+
+const singleJuz = board => {
+    const scope = board?.settings?.scope;
+    return scope?.type === 'juz' && scope.juzNumbers?.length === 1 ? Number(scope.juzNumbers[0]) : null;
+};
+
+const curriculumRank = board => {
+    const scope = board?.settings?.scope;
+    const curriculum = scope?.type === 'curriculum' ? scope.curriculum : null;
+    if (!curriculum) return null;
+    const countryId = Number(curriculum.countryId);
+    const systemId = Number(curriculum.systemId);
+    const stageId = Number(curriculum.stageId);
+    const levelId = Number(curriculum.levelId);
+    const stages = CURRICULUM_STAGES.filter(stage => stage.countryId === countryId && stage.systemId === systemId);
+    const stageIndex = stages.findIndex(stage => stage.stageId === stageId);
+    const level = CURRICULUM_LEVELS.find(item => item.countryId === countryId
+        && item.systemId === systemId && item.stageId === stageId && item.levelId === levelId);
+    if (stageIndex < 0 || !level) return null;
+    return stageIndex * 10000 + Number(level.levelNum) * 100 + Number(curriculum.termId || 0);
+};
 
 /**
  * ترتيب برامج الدفعة: ما سُجّل في الدفعة أولاً، ثم أي لوحة تحمل cohortId ولم تُسجَّل.
@@ -34,12 +55,31 @@ export function orderedPrograms(cohort, boards = []) {
             ordered.push(board);
         }
     }
-    const linkOrder = new Map((cohort?.programs || []).map((entry, index) => [String(entry.boardId), index]));
-    return ordered.sort((a, b) => {
-        const aPrior = autoPriorSurahs(a.settings?.scope).length;
-        const bPrior = autoPriorSurahs(b.settings?.scope).length;
-        return aPrior - bPrior || (linkOrder.get(String(a.id)) ?? 9999) - (linkOrder.get(String(b.id)) ?? 9999);
-    });
+    const linkOrder = new Map(ordered.map((board, index) => [String(board.id), index]));
+    const curriculumRanks = ordered.map(curriculumRank);
+    if (curriculumRanks.length && curriculumRanks.every(rank => rank !== null)) {
+        const families = new Set(ordered.map(board => {
+            const item = board.settings.scope.curriculum;
+            return `${item.countryId}:${item.systemId}`;
+        }));
+        if (families.size === 1) {
+            return [...ordered].sort((a, b) => curriculumRank(a) - curriculumRank(b)
+                || linkOrder.get(String(a.id)) - linkOrder.get(String(b.id)));
+        }
+    }
+
+    const juzNumbers = ordered.map(singleJuz);
+    if (juzNumbers.length && juzNumbers.every(Number.isFinite)) {
+        const secondDistinct = juzNumbers.find(number => number !== juzNumbers[0]);
+        if (secondDistinct !== undefined) {
+            const direction = secondDistinct > juzNumbers[0] ? 1 : -1;
+            return [...ordered].sort((a, b) => (singleJuz(a) - singleJuz(b)) * direction
+                || linkOrder.get(String(a.id)) - linkOrder.get(String(b.id)));
+        }
+    }
+
+    // الخطط المختلطة أو المخصّصة تتبع ترتيب الربط الصريح كما اختاره المعلّم.
+    return ordered;
 }
 
 /**

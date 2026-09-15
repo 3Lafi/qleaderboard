@@ -71,7 +71,7 @@ export default async function CohortPage(container, { toast, params, layout, nav
             <section class="cohort-path">
                 <div class="cohort-students-head">
                     <h2>مسار الدفعة</h2>
-                    <p>البرامج المرتبطة بهذه الدفعة بالترتيب. الطالب الذي يُتمّ برنامجاً ينتقل تلقائياً إلى التالي.</p>
+                    <p>الطالب ينتقل تلقائياً عبر مسار الدفعة. الأجزاء تتبع اتجاه البرامج المرتبطة، والمناهج تتبع الصفوف والمراحل الدراسية.</p>
                 </div>
                 <div id="cohortPathList"><p class="cohort-students-empty">جارِ تحميل البرامج…</p></div>
                 <div class="cohort-path-actions">

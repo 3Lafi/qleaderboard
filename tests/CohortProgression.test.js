@@ -8,10 +8,25 @@ import { expandScope } from '../js/shared/quran-data.js';
 const juz = n => ({ type: 'juz', juzNumbers: [n], curriculum: null, surahNumbers: expandScope({ type: 'juz', juzNumbers: [n] }) });
 const full = n => juz(n).surahNumbers;
 const board = (id, n, students = {}, extra = {}) => new Leaderboard(id, { settings: { name: `جزء ${n}`, scope: juz(n), direction: 'reverse', cohortId: 'c1' }, students, ...extra });
-const cohort = (students = { m1: { name: 'صالح' } }) => new Cohort('c1', { name: 'دفعة', students, programs: [{ boardId: 'b28' }, { boardId: 'b30' }, { boardId: 'b29' }] });
+const cohort = (students = { m1: { name: 'صالح' } }) => new Cohort('c1', { name: 'دفعة', students, programs: [{ boardId: 'b30' }, { boardId: 'b29' }, { boardId: 'b28' }] });
 
-test('Juz programs always progress 30 then 29 then 28 regardless of link order', () => {
-    assert.deepEqual(orderedPrograms(cohort(), [board('b28', 28), board('b29', 29), board('b30', 30)]).map(item => item.id), ['b30', 'b29', 'b28']);
+test('a descending Juz path follows its direction and may skip a Juz', () => {
+    const path = new Cohort('c1', { programs: [{ boardId: 'b30' }, { boardId: 'b29' }, { boardId: 'b27' }] });
+    assert.deepEqual(orderedPrograms(path, [board('b27', 27), board('b30', 30), board('b29', 29)]).map(item => item.id), ['b30', 'b29', 'b27']);
+});
+
+test('an ascending Juz path follows its direction and may skip a Juz', () => {
+    const path = new Cohort('c1', { programs: [{ boardId: 'b1' }, { boardId: 'b2' }, { boardId: 'b4' }] });
+    assert.deepEqual(orderedPrograms(path, [board('b4', 4), board('b2', 2), board('b1', 1)]).map(item => item.id), ['b1', 'b2', 'b4']);
+});
+
+test('curriculum programs follow primary, middle, then high-school levels', () => {
+    const curriculumBoard = (id, stageId, levelId, termId = 1) => new Leaderboard(id, {
+        settings: { name: id, cohortId: 'c1', scope: { type: 'curriculum', surahNumbers: [114], curriculum: { countryId: 1, systemId: 1, stageId, levelId, termId } } },
+    });
+    const path = new Cohort('c1', { programs: [{ boardId: 'high' }, { boardId: 'p6' }, { boardId: 'middle' }, { boardId: 'p1' }] });
+    const boards = [curriculumBoard('middle', 2, 1), curriculumBoard('high', 3, 1), curriculumBoard('p1', 1, 1), curriculumBoard('p6', 1, 6)];
+    assert.deepEqual(orderedPrograms(path, boards).map(item => item.id), ['p1', 'p6', 'middle', 'high']);
 });
 
 test('new cohort students exist in every program but later programs start hidden', () => {

@@ -75,7 +75,8 @@ export const CohortRepository = {
     async linkProgram(id, boardId) {
         const cohort = await this.get(id);
         if (!cohort) return;
-        const programs = (cohort.programs || []).filter(entry => String(entry.boardId) !== String(boardId));
+        if ((cohort.programs || []).some(entry => String(entry.boardId) === String(boardId))) return;
+        const programs = [...(cohort.programs || [])];
         programs.push({ boardId: String(boardId), linkedAt: new Date().toISOString() });
         await updateDoc(cohortRef(id), { programs, updatedAt: serverTimestamp() });
     },
