@@ -9,6 +9,7 @@ import { matchesQueryNameOrNumber } from '../../shared/text-utils.js';
 import { createFeedbackState } from '../layout/FeedbackStateView.js';
 import { autoPriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMemorization.js';
 import { planProgression, applyProgression } from '../../domain/usecases/CohortProgression.js';
+import { LIMITS } from '../../shared/config.js';
 
 export default async function BoardSettingsPage(container, { toast, params = {}, navigate, layout, user, services, setTitle, signal, refresh }) {
     const BoardRepository = services.boards;
@@ -85,15 +86,14 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                                 <p class="prior-hint" id="priorHint" role="status" aria-live="polite"></p>
                             </div>
                             <div class="prior-card cohort-link-card" id="cohortLinkCard">
-                                <label class="prior-toggle" for="fCohort">
-                                    <span>
-                                        <strong>ربط الدفعة باللوحة</strong>
-                                        <small>عند الربط تُنسخ أسماء الدفعة إلى اللوحة، والطالب الذي يُتمّ هذه الخطة ينتقل تلقائياً إلى البرنامج التالي المرتبط بالدفعة نفسها — بلا نقل يدوي.</small>
-                                    </span>
-                                </label>
-                                <select id="fCohort" aria-label="الدفعة المرتبطة باللوحة">
-                                    <option value="">بدون دفعة</option>
-                                </select>
+                                <div class="cohort-link-heading">
+                                    <span class="cohort-link-icon" aria-hidden="true">د</span>
+                                    <span><strong>دفعة اللوحة</strong><small>اربط هذه اللوحة بمسار طلاب، أو أنشئ دفعة جديدة الآن.</small></span>
+                                </div>
+                                <div class="cohort-link-controls">
+                                    <label for="fCohort"><span>اختر الدفعة</span><select id="fCohort" aria-describedby="cohortLinkHint"><option value="">جارِ تحميل الدفعات…</option></select></label>
+                                    <button type="button" class="btn btn-secondary" id="createCohortFromBoard">＋ دفعة جديدة</button>
+                                </div>
                                 <p class="prior-hint" id="cohortLinkHint" role="status" aria-live="polite"></p>
                             </div>
                         </section>
@@ -122,6 +122,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             group:scopePicker.getClassLabel(), scope:scopePicker.getScope(), direction:scopePicker.getDirection(),
             public:container.querySelector('#fPublic').checked,
             themeId:bannerDesigner ? bannerDesigner.getThemeId() : settings.banner?.themeId,
+            cohortId:container.querySelector('#fCohort')?.value || '',
         });
     }
     function refreshSaveState() {
@@ -221,19 +222,61 @@ export default async function BoardSettingsPage(container, { toast, params = {},
             myCohorts = await CohortRepository.listMine(user.uid);
         } catch (error) { console.error(error); }
         const current = settings.cohortId || '';
-        cohortSelect.innerHTML = '<option value="">بدون دفعة</option>' + myCohorts
+        cohortSelect.innerHTML = '<option value="">بدون دفعة — إدارة الطلاب داخل هذه اللوحة فقط</option>' + myCohorts
             .map(cohort => `<option value="${escapeHtml(cohort.id)}" ${String(cohort.id) === String(current) ? 'selected' : ''}>${escapeHtml(cohort.name)} — ${cohort.studentsCount()} طالب</option>`)
             .join('');
         refreshCohortHint();
     }
     function refreshCohortHint() {
         const cohort = myCohorts.find(c => String(c.id) === String(cohortSelect.value));
-        if (!cohort) { cohortHint.textContent = 'بلا دفعة: تضيف الطلاب يدوياً، ولا انتقال تلقائي بين البرامج.'; cohortHint.dataset.state = 'off'; return; }
-        cohortHint.textContent = `«${cohort.name}»: ${cohort.studentsCount()} طالب. سيُضاف من ليس له سجل في هذه اللوحة، ومن يُتمّ الخطة ينتقل للبرنامج التالي المرتبط بها.`;
+        if (!cohort) { cohortHint.textContent = 'هذه اللوحة مستقلة. يمكنك ربطها بدفعة في أي وقت.'; cohortHint.dataset.state = 'off'; return; }
+        cohortHint.textContent = `مرتبطة بـ«${cohort.name}» · ${cohort.studentsCount()} طالب. عند الحفظ تتم مزامنة الطلاب ومسار انتقالهم.`;
         cohortHint.dataset.state = 'on';
     }
-    cohortSelect.addEventListener('change', refreshCohortHint);
-    loadCohorts();
+    cohortSelect.addEventListener('change', () => { refreshCohortHint(); refreshSaveState(); });
+    await loadCohorts();
+
+    const createCohortDialog = document.createElement('dialog');
+    createCohortDialog.className = 'cohort-quick-dialog';
+    createCohortDialog.innerHTML = `
+        <form method="dialog" class="cohort-quick-heading"><div><span class="eyebrow">دفعة جديدة</span><h2 id="quickCohortTitle">أنشئ دفعة واربطها باللوحة</h2></div><button class="sheet-icon-button" value="cancel" aria-label="إغلاق">✕</button></form>
+        <form id="quickCohortForm" class="cohort-quick-form">
+            <label for="quickCohortName"><span>اسم الدفعة</span><input id="quickCohortName" maxlength="${LIMITS.MAX_NAME_LENGTH}" required autocomplete="off" placeholder="مثال: الصف الأول — 1448"></label>
+            <p>يمكنك إضافة الطلاب وإدارة مسار برامج الدفعة لاحقاً من صفحة الدفعات.</p>
+            <div class="cohort-quick-actions"><button type="button" class="btn btn-secondary" id="cancelQuickCohort">إلغاء</button><button type="submit" class="btn btn-primary" id="saveQuickCohort">إنشاء وربط</button></div>
+            <p class="setup-form-error" id="quickCohortError" role="alert" hidden></p>
+        </form>`;
+    container.append(createCohortDialog);
+    container.querySelector('#createCohortFromBoard').onclick = () => {
+        createCohortDialog.showModal();
+        createCohortDialog.querySelector('#quickCohortName').focus();
+    };
+    createCohortDialog.querySelector('#cancelQuickCohort').onclick = () => createCohortDialog.close();
+    createCohortDialog.querySelector('#quickCohortForm').onsubmit = async event => {
+        event.preventDefault();
+        const input = createCohortDialog.querySelector('#quickCohortName');
+        const submit = createCohortDialog.querySelector('#saveQuickCohort');
+        const dialogError = createCohortDialog.querySelector('#quickCohortError');
+        const name = input.value.trim();
+        if (!name) { dialogError.textContent = 'اكتب اسم الدفعة.'; dialogError.hidden = false; input.focus(); return; }
+        submit.disabled = true; submit.textContent = 'جارِ الإنشاء…'; dialogError.hidden = true;
+        try {
+            const id = await CohortRepository.create(user.uid, { name });
+            await loadCohorts();
+            cohortSelect.value = id;
+            refreshCohortHint();
+            refreshSaveState();
+            input.value = '';
+            createCohortDialog.close();
+            toast(`تم إنشاء «${name}» واختيارها للوحة`, 'success');
+        } catch (error) {
+            console.error(error);
+            dialogError.textContent = error?.message || 'تعذر إنشاء الدفعة. حاول مرة أخرى.';
+            dialogError.hidden = false;
+        } finally {
+            submit.disabled = false; submit.textContent = 'إنشاء وربط';
+        }
+    };
 
     // يضع أعضاء الدفعة في كل برامجها، ويخفي البرامج التي لم يبلغوها بعد.
     async function syncCohortStudents(cohortId) {
