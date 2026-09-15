@@ -3,6 +3,7 @@ import { boardShareUrl, copyToClipboard, escapeHtml } from '../views/ui.js';
 import { normalizeArabic } from '../../shared/text-utils.js';
 import { createFeedbackState } from '../layout/FeedbackStateView.js';
 import { planProgression, applyProgression } from '../../domain/usecases/CohortProgression.js';
+import { boardStudentCount, dashboardStudentCount } from '../../domain/usecases/DashboardStudentCount.js';
 
 export default async function MyBoardsPage(container, { layout, user, services, setTitle, refresh }) {
     const BoardRepository = services.boards;
@@ -25,11 +26,11 @@ export default async function MyBoardsPage(container, { layout, user, services, 
 
     const host = container.querySelector('#boardsHost');
 
-    let boards;
+    let boards, cohorts = [];
     try {
         boards = await BoardRepository.listMine(user.uid);
         try {
-            const cohorts = await CohortRepository.listMine(user.uid);
+            cohorts = await CohortRepository.listMine(user.uid);
             let synchronized = false;
             for (const cohort of cohorts) {
                 const plan = planProgression({ cohort, boards });
@@ -79,7 +80,7 @@ export default async function MyBoardsPage(container, { layout, user, services, 
     host.innerHTML = `
         <section class="dashboard-stats" aria-label="ملخص لوحاتك">
             <div><strong>${boards.length}</strong><span>لوحة</span></div>
-            <div><strong>${boards.reduce((sum, board) => sum + board.studentsCount(), 0)}</strong><span>طالب</span></div>
+            <div><strong>${dashboardStudentCount(boards, cohorts)}</strong><span>طالب</span></div>
             <div><strong>${boards.filter(board => board.settings.isPublic).length}</strong><span>لوحة عامة</span></div>
         </section>
         <div class="dashboard-tools">
@@ -111,7 +112,7 @@ export default async function MyBoardsPage(container, { layout, user, services, 
 
         host.querySelector('#boardsResultCount').textContent = `${matches.length} من ${boards.length} لوحة`;
         grid.innerHTML = matches.length
-            ? matches.map(boardCardHtml).join('')
+            ? matches.map(board => boardCardHtml(board, cohorts)).join('')
             : `<div class="empty-search">
                    <h2>لا توجد لوحات مطابقة</h2>
                    <p>غيّر كلمات البحث أو اعرض كل اللوحات.</p>
@@ -150,7 +151,7 @@ export default async function MyBoardsPage(container, { layout, user, services, 
     renderBoards();
 }
 
-function boardCardHtml(board) {
+function boardCardHtml(board, cohorts) {
     const s = board.settings;
     return `
         <div class="board-card">
@@ -159,7 +160,7 @@ function boardCardHtml(board) {
             <div class="board-meta">
                 ${s.schoolName ? `<span>${escapeHtml(s.schoolName)}</span>` : ''}
                 ${s.classLabel ? `<span>${escapeHtml(s.classLabel)}</span>` : ''}
-                <span>${board.studentsCount()} طالب</span>
+                <span>${boardStudentCount(board, cohorts)} طالب</span>
             </div>
             <div class="board-actions">
                 <a href="/edit/${board.id}/students" class="btn btn-primary btn-sm">جدول المتابعة</a>
