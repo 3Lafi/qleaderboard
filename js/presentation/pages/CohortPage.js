@@ -74,10 +74,6 @@ export default async function CohortPage(container, { toast, params, layout, nav
                     <p>الطالب ينتقل تلقائياً عبر مسار الدفعة. الأجزاء تتبع اتجاه البرامج المرتبطة، والمناهج تتبع الصفوف والمراحل الدراسية.</p>
                 </div>
                 <div id="cohortPathList"><p class="cohort-students-empty">جارِ تحميل البرامج…</p></div>
-                <div class="cohort-path-actions">
-                    <button type="button" class="btn btn-primary" id="syncProgression">مزامنة التقدّم الآن</button>
-                    <span class="cohort-path-status" id="syncStatus" role="status" aria-live="polite"></span>
-                </div>
             </section>
 
             <section class="cohort-students">
@@ -346,7 +342,6 @@ export default async function CohortPage(container, { toast, params, layout, nav
         }
         if (!linkedBoards.length) {
             host2.innerHTML = '<p class="cohort-students-empty">لا يوجد برنامج مرتبط بعد. اربط الدفعة من إعدادات أي لوحة، أو أنشئ برنامجاً جديداً من الأعلى.</p>';
-            host.querySelector('#syncProgression').disabled = true;
             return;
         }
         host2.innerHTML = `
@@ -370,36 +365,24 @@ export default async function CohortPage(container, { toast, params, layout, nav
                 }).join('')}
             </ol>
         `;
-        host.querySelector('#syncProgression').disabled = false;
     }
 
     async function syncProgression({ silent = false } = {}) {
-        const status = host.querySelector('#syncStatus');
-        const button = host.querySelector('#syncProgression');
-        button.disabled = true;
-        if (status) status.textContent = 'جارٍ المزامنة…';
         try {
             const plan = planProgression({ cohort, boards: linkedBoards });
-            if (!plan.total) {
-                if (status) status.textContent = 'لا يوجد من ينقل حالياً — كل مجتاز وصل إلى برنامجه التالي.';
-                return;
-            }
-            const result = await applyProgression(plan, {
+            if (!plan.total) return;
+            await applyProgression(plan, {
                 addStudent: (boardId, name, count, extra) => BoardRepository.addStudent(boardId, name, count, extra),
                 setStudentVisibility: (boardId, studentId, hidden, cohortStudentId) => BoardRepository.setStudentVisibility(boardId, studentId, hidden, '', cohortStudentId),
             });
-            if (status) status.textContent = `تمت مزامنة ${result.added + result.updated} سجلاً${result.failed.length ? ` — تعذّر ${result.failed.length}` : ''}.`;
             if (!silent) toast('تم تحديث ظهور الطلاب حسب تقدّمهم', 'success');
             await loadPath();
         } catch (error) {
             console.error(error);
-            if (status) status.textContent = 'تعذرت المزامنة، حاول مرة أخرى.';
-        } finally {
-            if (host.querySelector('#syncProgression')) host.querySelector('#syncProgression').disabled = false;
+            if (!silent) toast('تعذرت مزامنة تقدّم الدفعة', 'error');
         }
     }
 
-    host.querySelector('#syncProgression')?.addEventListener('click', () => syncProgression());
     render();
     await loadPath();
     // مزامنة تلقائية عند فتح الدفعة: المجتاز يظهر في البرنامج التالي بلا خطوة يدوية

@@ -35,11 +35,10 @@ await page.waitForTimeout(1500);
 const path = await page.evaluate(()=>({
   title: document.querySelector('.cohort-path h2')?.textContent?.trim(),
   items: [...document.querySelectorAll('.cohort-path-item a')].map(a=>a.textContent.trim()),
-  syncBtn: !!document.querySelector('#syncProgression'),
-  status: document.querySelector('#syncStatus')?.textContent?.trim() || '',
+  syncControls: !!document.querySelector('#syncProgression, #syncStatus'),
 }));
 R('مسار الدفعة يعرض البرامج المرتبطة بالترتيب', path.title==='مسار الدفعة' && path.items.length>=1, JSON.stringify(path.items));
-R('زر المزامنة موجود وحالته واضحة', path.syncBtn===true && path.status.length>0, JSON.stringify({status: path.status}));
+R('المزامنة تلقائية بلا عناصر تحكم يدوية', path.syncControls===false, JSON.stringify(path));
 R('لا أخطاء JS', errs.length===0, errs.join(' | ').slice(0,160));
 await browser.close();
 console.log(log.some(l=>l.startsWith('FAIL'))?'>>> FAILURES':'>>> cohort linking + progression work');
