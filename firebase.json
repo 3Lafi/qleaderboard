@@ -71,6 +71,12 @@
         ]
       },
       {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-cache, max-age=0, must-revalidate" }
+        ]
+      },
+      {
         "source": "images/og/*.jpg",
         "headers": [
           {

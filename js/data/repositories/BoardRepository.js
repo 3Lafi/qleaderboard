@@ -1,14 +1,15 @@
 // طبقة الوصول الوحيدة إلى Firestore لمستند اللوحات
-import { db } from '../firebase/firebase.js';
+import { db, auth } from '../firebase/firebase.js';
 import {
     collection, doc, getDoc, getDocs, updateDoc, deleteField,
-    query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, writeBatch,
+    query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, writeBatch, runTransaction,
 } from '../firebase/firebase-sdk.js';
 import { Leaderboard } from '../../domain/models/Leaderboard.js';
 import { sanitizeSettings } from '../../domain/models/BoardSettings.js';
 import { LIMITS } from '../../shared/config.js';
 import { boardImageVersion } from '../../shared/board-image.js';
 import { renderBoardImage } from '../services/BoardImageRenderer.js';
+import { createBoardImageRecovery } from '../services/BoardImageRecovery.js';
 
 const COLLECTION = 'leaderboards';
 
@@ -22,6 +23,19 @@ function boardRef(boardId) {
 
 function previewRef(boardId) { return doc(db, 'boardPreviews', boardId); }
 
+const imageRecovery = createBoardImageRecovery({
+    currentUid: () => auth.currentUser?.uid,
+    readImage: async id => (await getDoc(previewRef(id))).data(),
+    renderImage: renderBoardImage,
+    commitIfCurrent: (id, uid, version, image) => runTransaction(db, async transaction => {
+        const board = await transaction.get(boardRef(id));
+        const preview = await transaction.get(previewRef(id));
+        if (!board.exists() || board.data().ownerUid !== uid || await boardImageVersion(board.data().settings) !== version) return false;
+        if (preview.data()?.version !== version || !preview.data()?.jpeg) transaction.set(previewRef(id), image);
+        return true;
+    }),
+});
+
 function randomId(len = 8) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
     let out = '';
@@ -30,15 +44,20 @@ function randomId(len = 8) {
 }
 
 export const BoardRepository = {
+    retryPreviews: () => imageRecovery.retry(),
     async listMine(uid) {
         const q = query(boardsCol(), where('ownerUid', '==', uid), orderBy('updatedAt', 'desc'));
         const snap = await getDocs(q);
-        return snap.docs.map(d => new Leaderboard(d.id, d.data()));
+        return snap.docs.map(d => {
+            void imageRecovery.ensure(d.id, d.data());
+            return new Leaderboard(d.id, d.data());
+        });
     },
 
     async get(boardId) {
         const snap = await getDoc(boardRef(boardId));
         if (!snap.exists()) return null;
+        void imageRecovery.ensure(boardId, snap.data());
         return new Leaderboard(snap.id, snap.data());
     },
 
@@ -46,6 +65,7 @@ export const BoardRepository = {
     watch(boardId, onChange, onError) {
         return onSnapshot(boardRef(boardId), snap => {
             if (!snap.exists()) { onChange(null); return; }
+            if (!snap.metadata.hasPendingWrites) void imageRecovery.ensure(boardId, snap.data());
             onChange(new Leaderboard(snap.id, snap.data()));
         }, onError);
     },

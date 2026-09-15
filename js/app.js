@@ -10,3 +10,4 @@ const services = { boards: BoardRepository, cohorts: CohortRepository, authentic
 const layout = new AppLayoutManager({ authState, ...services });
 const router = createRouter({ authState, layout, services });
 router.start();
+window.addEventListener('online', () => { void BoardRepository.retryPreviews(); });

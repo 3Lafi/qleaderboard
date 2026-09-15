@@ -1,5 +1,5 @@
 // عامل الخدمة: يخزّن أصول التطبيق مؤقتاً ليعمل دون اتصال — بلا قائمة ملفات يدوية تُنسى عند إضافة/إعادة تسمية ملف
-const CACHE_NAME = 'wisam-cache-v30-custom-board-images';
+const CACHE_NAME = 'wisam-cache-v31-recover-board-images';
 
 // الصدفة الأساسية فقط تُخزَّن مسبقاً؛ بقية الأصول تُخزَّن تلقائياً عند أول طلب لها (انظر fetch أدناه)
 const PRECACHE_URLS = ['/', '/index.html'];
@@ -22,12 +22,23 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames =>
-      Promise.all(cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name)))
-    )
-  );
-  self.clients.claim();
+  event.waitUntil((async () => {
+    const cacheNames = await caches.keys();
+    const upgrading = cacheNames.some(name => name !== CACHE_NAME);
+    await Promise.all(cacheNames.filter(name => name !== CACHE_NAME).map(name => caches.delete(name)));
+    await self.clients.claim();
+    if (!upgrading) return;
+    // A public board has no editable form: safely replace its old in-memory
+    // modules. Never navigate away from a teacher's creation/editing form.
+    const windows = await self.clients.matchAll({ type: 'window' });
+    await Promise.all(windows.map(client => {
+      const url = new URL(client.url);
+      if (url.origin === self.location.origin && /^\/b\/[A-Za-z0-9_-]+(?:\/students\/[A-Za-z0-9_-]+)?$/.test(url.pathname)) {
+        return client.navigate(client.url).catch(() => {});
+      }
+      client.postMessage({ type: 'WISAM_UPDATE_READY' });
+    }));
+  })());
 });
 
 self.addEventListener('fetch', event => {

@@ -95,6 +95,7 @@ export function createRouter({ authState, layout, services, basePath = '', loadP
             host.setAttribute('aria-busy', 'false');
             finishScroll(host, scroll);
             announce(host);
+            win.dispatchEvent?.(new Event('wisam:page-ready'));
         } catch (error) {
             if (visit.signal.aborted) return;
             doc.title = 'تعذر تحميل الصفحة — وسام';

@@ -33,4 +33,5 @@ export {
     arrayUnion,
     arrayRemove,
     writeBatch,
+    runTransaction,
 } from 'https://www.gstatic.com/firebasejs/11.6.0/firebase-firestore.js';

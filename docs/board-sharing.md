@@ -14,6 +14,14 @@ student data. JPEGs are size-limited and excluded from indexes. Normal student
 progress writes do not regenerate or download image data. Deleting a board
 also deletes its preview in the same batch.
 
+Old app sessions can still create boards without images. The repository
+automatically repairs a missing or outdated image when the owner opens the
+board, its settings, recording page, or dashboard. Repairs are deduplicated and
+transactionally checked against current settings; public visitors cannot write
+images. Failed recovery retries when connectivity returns. App modules now
+revalidate their HTTP cache, and service-worker upgrades reload read-only board
+pages or wait for the next completed navigation from an editing page.
+
 The Worker computes a SHA-256 revision from the current name, school, class,
 theme and renderer version. OG image URLs use `/b/{id}/image.jpg?v={revision}`.
 The image endpoint checks public visibility and the revision before serving
