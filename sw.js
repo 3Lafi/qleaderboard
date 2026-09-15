@@ -1,5 +1,5 @@
 // عامل الخدمة: يخزّن أصول التطبيق مؤقتاً ليعمل دون اتصال — بلا قائمة ملفات يدوية تُنسى عند إضافة/إعادة تسمية ملف
-const CACHE_NAME = 'wisam-cache-v29-automatic-board-previews';
+const CACHE_NAME = 'wisam-cache-v30-custom-board-images';
 
 // الصدفة الأساسية فقط تُخزَّن مسبقاً؛ بقية الأصول تُخزَّن تلقائياً عند أول طلب لها (انظر fetch أدناه)
 const PRECACHE_URLS = ['/', '/index.html'];

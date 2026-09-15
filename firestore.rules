@@ -72,6 +72,23 @@ service cloud.firestore {
       allow delete: if isOwner();
     }
 
+    // Keep JPEG data outside the board document so student updates stay small.
+    match /boardPreviews/{boardId} {
+      function board() { return get(/databases/$(database)/documents/leaderboards/$(boardId)); }
+      function nextBoard() { return getAfter(/databases/$(database)/documents/leaderboards/$(boardId)); }
+      allow get: if board().data.settings.isPublic == true
+                 || (request.auth != null && board().data.ownerUid == request.auth.uid);
+      allow create, update: if request.auth != null
+                           && nextBoard().data.ownerUid == request.auth.uid
+                           && request.resource.data.keys().hasOnly(['version', 'jpeg'])
+                           && request.resource.data.version is string
+                           && request.resource.data.version.matches('^[a-f0-9]{64}$')
+                           && request.resource.data.jpeg is string
+                           && request.resource.data.jpeg.size() > 0
+                           && request.resource.data.jpeg.size() <= 250000;
+      allow delete: if request.auth != null && board().data.ownerUid == request.auth.uid;
+    }
+
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }

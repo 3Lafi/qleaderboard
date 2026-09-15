@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { handleRequest } from '../workers/board-share/src/index.js';
 import { boardShareUrl } from '../js/presentation/views/ui.js';
 import legacyTrigger from '../workers/og-preview-trigger/src/index.js';
+import { boardImageVersion } from '../js/shared/board-image.js';
 
 const env = { FIREBASE_PROJECT_ID: 'test-project', FIREBASE_API_KEY: 'public-key' };
 const shareUrl = boardShareUrl('newboard');
@@ -36,10 +37,47 @@ test('new and edited boards use the current fields on the same URL without a bui
     const html = await second.text();
     assert.match(html, /og:title" content="الاسم المعدل — لوحة حفظ القرآن/);
     assert.match(html, /og:description" content="مدرسة وسام — الصف الأول/);
-    assert.match(html, /wisam-universal-v2.jpg/);
+    assert.match(html, /\/b\/newboard\/image.jpg\?v=[a-f0-9]{64}/);
     assert.match(html, /href="https:\/\/wisam.web.app\/#\/b\/newboard"/);
     assert.ok(!html.includes('owner-secret'));
     assert.equal(reads, 2);
+});
+
+test('image versions change with banner text or theme, not student progress or other settings', async () => {
+    const settings = { name: 'لوحة', schoolName: 'مدرسة', classLabel: 'الصف الأول', banner: { themeId: 'emerald' } };
+    const version = await boardImageVersion(settings);
+    assert.equal(await boardImageVersion({ ...settings, isPublic: false, students: { count: 1 } }), version);
+    for (const change of [{ name: 'جديدة' }, { schoolName: 'مدرسة أخرى' }, { classLabel: 'الصف الثاني' }, { banner: { themeId: 'sapphire' } }]) {
+        assert.notEqual(await boardImageVersion({ ...settings, ...change }), version);
+    }
+});
+
+test('image endpoint serves the saved JPEG and rejects stale versions', async () => {
+    const version = await boardImageVersion({ name: 'لوحة', schoolName: 'مدرسة وسام', classLabel: 'الصف الأول' });
+    let calls = 0;
+    const read = async url => {
+        calls++;
+        return url.includes('/boardPreviews/') ? Response.json({ fields: {
+            version: { stringValue: version }, jpeg: { stringValue: '/9j/2Q==' },
+        } }) : document('لوحة');
+    };
+    const image = await handleRequest(new Request(`${shareUrl}/image.jpg?v=${version}`), env, read);
+    assert.equal(image.status, 200);
+    assert.equal(image.headers.get('content-type'), 'image/jpeg');
+    assert.deepEqual([...new Uint8Array(await image.arrayBuffer())], [255, 216, 255, 217]);
+    assert.equal(calls, 2);
+    const stale = await handleRequest(new Request(`${shareUrl}/image.jpg?v=old`), env, read);
+    assert.equal(stale.status, 404);
+    assert.equal(calls, 3);
+});
+
+test('private image requests never read image data', async () => {
+    let calls = 0;
+    const image = await handleRequest(new Request(`${shareUrl}/image.jpg`), env, async () => {
+        calls++; return document('Private', '', '', false);
+    });
+    assert.equal(image.status, 404);
+    assert.equal(calls, 1);
 });
 
 test('metadata and HTML safely escape board fields', async () => {

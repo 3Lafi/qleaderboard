@@ -2,10 +2,24 @@
 
 The share field and copy button use `https://wisam-share.wisam-3lafi.workers.dev/b/{id}`.
 The Worker reads the public board from Firestore on each GET/HEAD and returns its
-current name, school and class in server-rendered OG/Twitter tags. It uses the
-single approved `wisam-universal-v2.jpg`. No per-board generation, webhook, cron,
-GitHub build, Firebase deployment, service-account secret, or billing upgrade is
-required for a board save.
+current name, school and class in server-rendered OG/Twitter tags. Each board
+also has a 1200×630 JPEG matching its banner color and text. BoardRepository
+renders the image with the browser's Canvas and locally hosted Tajawal fonts,
+then saves settings and image in one Firestore batch. Only visual changes
+replace an existing image. No webhook, cron, GitHub build, Firebase deployment,
+service-account secret, or billing upgrade is required for a board save.
+
+Images live in separate `boardPreviews/{id}` documents, never in the board's
+student data. JPEGs are size-limited and excluded from indexes. Normal student
+progress writes do not regenerate or download image data. Deleting a board
+also deletes its preview in the same batch.
+
+The Worker computes a SHA-256 revision from the current name, school, class,
+theme and renderer version. OG image URLs use `/b/{id}/image.jpg?v={revision}`.
+The image endpoint checks public visibility and the revision before serving
+JPEG bytes. Replaced images are no longer available at old revision URLs.
+Both image and HTML responses use `no-store`; WhatsApp can still retain its
+own existing previews. The universal image remains the portal's own OG.
 
 HTML and upstream reads are not cached. Private, deleted and missing boards
 return 404 without board details. Temporary Firestore failures return 503 rather
@@ -24,8 +38,14 @@ Deployment:
 ```sh
 npx wrangler deploy --config workers/board-share/wrangler.toml
 npm run verify
-firebase deploy --only hosting:wisam --project wisam-3lafi
+firebase deploy --only firestore,hosting:wisam --project wisam-3lafi
 ```
+
+For boards that predate this feature, the deployment migration is
+`node scripts/migrate-board-images.mjs --apply`. It uses the existing local
+Firebase CLI credentials, skips current images, and checks board revisions
+within a Firestore transaction. It is a migration, not an ongoing service.
+`node scripts/test-board-images.mjs` validates all theme renderings locally.
 
 Every Firebase `/b/{id}` request redirects to the live Worker, including IDs
 created after deployment. This redirect takes priority over old static preview

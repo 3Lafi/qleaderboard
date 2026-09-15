@@ -12,7 +12,7 @@ import {
     assertFails,
 } from '@firebase/rules-unit-testing';
 import {
-    doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, Timestamp, serverTimestamp,
+    doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, getDocs, Timestamp, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
 
 const PROJECT_ID = 'wisam-rules-test';
@@ -52,6 +52,38 @@ before(async () => {
 
 after(async () => {
     await testEnv?.cleanup();
+});
+
+test('preview: board and image can be created atomically by the owner', async () => {
+    const db = testEnv.authenticatedContext(OWNER_UID).firestore();
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'leaderboards', 'image-batch'), validBoardData({ createdAt: serverTimestamp() }));
+    batch.set(doc(db, 'boardPreviews', 'image-batch'), { version: 'a'.repeat(64), jpeg: '/9j/2Q==' });
+    await assertSucceeds(batch.commit());
+    await assertSucceeds(getDoc(doc(db, 'boardPreviews', 'image-batch')));
+    const anonymous = testEnv.unauthenticatedContext().firestore();
+    await assertFails(getDoc(doc(anonymous, 'boardPreviews', 'image-batch')));
+    await assertSucceeds(updateDoc(doc(db, 'leaderboards', 'image-batch'), { 'settings.isPublic': true }));
+    await assertSucceeds(getDoc(doc(anonymous, 'boardPreviews', 'image-batch')));
+    await assertSucceeds(updateDoc(doc(db, 'leaderboards', 'image-batch'), { 'settings.isPublic': false }));
+    await assertFails(getDoc(doc(anonymous, 'boardPreviews', 'image-batch')));
+    const remove = writeBatch(db);
+    remove.delete(doc(db, 'boardPreviews', 'image-batch'));
+    remove.delete(doc(db, 'leaderboards', 'image-batch'));
+    await assertSucceeds(remove.commit());
+});
+
+test('preview: reject strangers, orphans, oversized images and extra fields', async () => {
+    await seedBoard('image-permissions', validBoardData());
+    const db = testEnv.authenticatedContext(OWNER_UID).firestore();
+    const stranger = testEnv.authenticatedContext(STRANGER_UID).firestore();
+    const preview = { version: 'a'.repeat(64), jpeg: '/9j/2Q==' };
+    await assertFails(setDoc(doc(stranger, 'boardPreviews', 'image-permissions'), preview));
+    await assertFails(setDoc(doc(db, 'boardPreviews', 'missing-parent'), preview));
+    await assertFails(setDoc(doc(db, 'boardPreviews', 'image-permissions'), { ...preview, jpeg: 'A'.repeat(250001) }));
+    await assertFails(setDoc(doc(db, 'boardPreviews', 'image-permissions'), { ...preview, extra: 'invalid' }));
+    await assertFails(setDoc(doc(db, 'boardPreviews', 'image-permissions'), { ...preview, version: 'invalid' }));
+    await assertFails(getDocs(collection(db, 'boardPreviews')));
 });
 
 test('get: owner can always read their own board, public or private', async () => {

@@ -1,12 +1,14 @@
 // طبقة الوصول الوحيدة إلى Firestore لمستند اللوحات
 import { db } from '../firebase/firebase.js';
 import {
-    collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc, deleteField,
-    query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove,
+    collection, doc, getDoc, getDocs, updateDoc, deleteField,
+    query, where, orderBy, onSnapshot, serverTimestamp, arrayUnion, arrayRemove, writeBatch,
 } from '../firebase/firebase-sdk.js';
 import { Leaderboard } from '../../domain/models/Leaderboard.js';
 import { sanitizeSettings } from '../../domain/models/BoardSettings.js';
 import { LIMITS } from '../../shared/config.js';
+import { boardImageVersion } from '../../shared/board-image.js';
+import { renderBoardImage } from '../services/BoardImageRenderer.js';
 
 const COLLECTION = 'leaderboards';
 
@@ -17,6 +19,8 @@ function boardsCol() {
 function boardRef(boardId) {
     return doc(db, COLLECTION, boardId);
 }
+
+function previewRef(boardId) { return doc(db, 'boardPreviews', boardId); }
 
 function randomId(len = 8) {
     const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -49,13 +53,15 @@ export const BoardRepository = {
     async create(ownerUid, settings) {
         const id = randomId();
         const initialSettings = sanitizeSettings(settings);
-        await setDoc(boardRef(id), {
+        const preview = await renderBoardImage(initialSettings);
+        const batch = writeBatch(db);
+        batch.set(boardRef(id), {
             ownerUid,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             settings: initialSettings,
-            // تبقى بطاقة المشاركة مخلّدة عند أول بنر؛ تعديلات البانر اللاحقة
-            // لا تغيّر الرابط الذي سبق أن خزّنته تطبيقات المراسلة.
+            // لقطة تاريخية محفوظة للتوافق مع اللوحات القديمة؛ صورة المشاركة
+            // الحالية تُحفظ منفصلة وتُحدّث مع إعدادات البانر.
             initialBanner: {
                 name: initialSettings.name,
                 schoolName: initialSettings.schoolName,
@@ -64,18 +70,30 @@ export const BoardRepository = {
             },
             students: {},
         });
+        batch.set(previewRef(id), preview);
+        await batch.commit();
         return id;
     },
 
     async updateSettings(boardId, settings) {
-        await updateDoc(boardRef(boardId), {
-            settings: sanitizeSettings(settings),
+        const nextSettings = sanitizeSettings(settings);
+        const version = await boardImageVersion(nextSettings);
+        const previous = await getDoc(previewRef(boardId));
+        const preview = previous.data()?.version === version ? null : await renderBoardImage(nextSettings);
+        const batch = writeBatch(db);
+        batch.update(boardRef(boardId), {
+            settings: nextSettings,
             updatedAt: serverTimestamp(),
         });
+        if (preview) batch.set(previewRef(boardId), preview);
+        await batch.commit();
     },
 
     async delete(boardId) {
-        await deleteDoc(boardRef(boardId));
+        const batch = writeBatch(db);
+        batch.delete(previewRef(boardId));
+        batch.delete(boardRef(boardId));
+        await batch.commit();
     },
 
     // محتسب سابقاً لطالب واحد (انتقال من برنامج آخر) — أرقام سور فقط
