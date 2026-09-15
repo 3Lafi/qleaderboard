@@ -31,7 +31,10 @@ const imageRecovery = createBoardImageRecovery({
         const board = await transaction.get(boardRef(id));
         const preview = await transaction.get(previewRef(id));
         if (!board.exists() || board.data().ownerUid !== uid || await boardImageVersion(board.data().settings) !== version) return false;
-        if (preview.data()?.version !== version || !preview.data()?.jpeg) transaction.set(previewRef(id), image);
+        if (preview.data()?.version !== version || !preview.data()?.jpeg) {
+            transaction.set(previewRef(id), image);
+            transaction.update(boardRef(id), { previewRevision: crypto.randomUUID() });
+        }
         return true;
     }),
 });
@@ -77,6 +80,7 @@ export const BoardRepository = {
         const batch = writeBatch(db);
         batch.set(boardRef(id), {
             ownerUid,
+            previewRevision: crypto.randomUUID(),
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
             settings: initialSettings,
@@ -104,8 +108,11 @@ export const BoardRepository = {
         batch.update(boardRef(boardId), {
             settings: nextSettings,
             updatedAt: serverTimestamp(),
+            ...(preview ? { previewRevision: crypto.randomUUID() } : {}),
         });
-        if (preview) batch.set(previewRef(boardId), preview);
+        if (preview) {
+            batch.set(previewRef(boardId), preview);
+        }
         await batch.commit();
     },
 

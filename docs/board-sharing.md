@@ -18,7 +18,9 @@ Old app sessions can still create boards without images. The repository
 automatically repairs a missing or outdated image when the owner opens the
 board, its settings, recording page, or dashboard. Repairs are deduplicated and
 transactionally checked against current settings; public visitors cannot write
-images. Failed recovery retries when connectivity returns. App modules now
+images. Failed recovery retries when connectivity returns. Image writes also
+rotate a board's `previewRevision`, included as `r` in the OG image URL, so a
+repaired image bypasses third-party caches of earlier failed responses. App modules now
 revalidate their HTTP cache, and service-worker upgrades reload read-only board
 pages or wait for the next completed navigation from an editing page.
 

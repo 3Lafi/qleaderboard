@@ -11,6 +11,7 @@ const shareUrl = boardShareUrl('newboard');
 const request = (options) => new Request(shareUrl, options);
 function document(name, school = 'مدرسة وسام', grade = 'الصف الأول', isPublic = true) {
     return Response.json({ fields: {
+        previewRevision: { stringValue: 'saved-image-revision' },
         ownerUid: { stringValue: 'owner-secret' },
         settings: { mapValue: { fields: {
             name: { stringValue: name }, schoolName: { stringValue: school },
@@ -38,6 +39,7 @@ test('new and edited boards use the current fields on the same URL without a bui
     assert.match(html, /og:title" content="الاسم المعدل — لوحة حفظ القرآن/);
     assert.match(html, /og:description" content="مدرسة وسام — الصف الأول/);
     assert.match(html, /\/b\/newboard\/image.jpg\?v=[a-f0-9]{64}/);
+    assert.match(html, /&amp;r=saved-image-revision/);
     assert.match(html, /href="https:\/\/wisam.web.app\/#\/b\/newboard"/);
     assert.ok(!html.includes('owner-secret'));
     assert.equal(reads, 2);

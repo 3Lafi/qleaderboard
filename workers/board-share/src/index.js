@@ -80,7 +80,8 @@ export async function handleRequest(request, env, fetchBoard = fetch) {
         });
         if ([403, 404].includes(upstream.status)) return unavailable();
         if (!upstream.ok) throw new Error(`Firestore status ${upstream.status}`);
-        const settings = (await upstream.json()).fields?.settings?.mapValue?.fields;
+        const boardDocument = await upstream.json();
+        const settings = boardDocument.fields?.settings?.mapValue?.fields;
         if (settings?.isPublic?.booleanValue !== true) return unavailable();
         const field = name => (settings[name]?.stringValue || '').trim();
         const version = await boardImageVersion({
@@ -105,7 +106,9 @@ export async function handleRequest(request, env, fetchBoard = fetch) {
             description: [field('schoolName'), field('classLabel')].filter(Boolean).join(' — ') || 'تابع تقدّم حفظ القرآن الكريم مباشرة على لوحة وسام',
             boardId,
             shareUrl: `${url.origin}/b/${boardId}`,
-            imageUrl: `${url.origin}/b/${boardId}/image.jpg?v=${version}`,
+            // A repair of a missing image changes this token even if its text
+            // stays the same, bypassing externally cached failed image fetches.
+            imageUrl: `${url.origin}/b/${boardId}/image.jpg?v=${version}&r=${encodeURIComponent(boardDocument.fields?.previewRevision?.stringValue || boardDocument.createTime || 'initial')}`,
         }));
     } catch (error) {
         console.error('Board preview read failed:', error.message);
