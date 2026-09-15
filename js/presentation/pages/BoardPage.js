@@ -158,7 +158,7 @@ export default function BoardPage(container, { toast, params, layout, user, serv
             students: rankedStudents.map((student, index) => ({
                 id: student.id,
                 name: student.name,
-                rank: index + 1,
+                rank: student.rank ?? (index + 1),
                 progress: student.progress,
                 completed: student.isCompleted,
             })),
@@ -186,7 +186,7 @@ export default function BoardPage(container, { toast, params, layout, user, serv
             b.setAttribute('aria-pressed', String(b.dataset.studentFilter === studentFilter))
         );
 
-        const matches = rankedStudents.map((student, i) => ({ student, rank: i + 1 })).filter(({ student }) =>
+        const matches = rankedStudents.map((student, i) => ({ student, rank: student.rank ?? (i + 1) })).filter(({ student }) =>
             matchesStudentName(student.name, searchText) &&
             (studentFilter === 'all' || (studentFilter === 'completed' ? student.isCompleted : !student.isCompleted))
         );

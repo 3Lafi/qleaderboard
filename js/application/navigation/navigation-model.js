@@ -31,11 +31,11 @@ export function boardDestinations(board, user) {
     const owner = isBoardOwner(board, user);
     return [
         ...(owner ? [{ key: 'board-students', href: `/edit/${id}/students`, label: 'جدول المتابعة', icon: 'sheet' }] : []),
-        ...(board.settings?.isPublic !== false ? [{ key: 'board-public', href: `/b/${id}`, label: owner ? 'عرض اللوحة' : 'الطلاب', icon: 'publicView' }] : []),
+        ...(board.settings?.isPublic !== false ? [{ key: 'board-public', href: `/b/${id}`, label: 'عرض المحتوى', icon: 'publicView' }] : []),
         ...(owner ? [{ key: 'board-settings', href: `/edit/${id}`, label: 'إعدادات اللوحة', icon: 'settings' }] : []),
     ];
 }
 
 export function navigationTitle(activeKey) {
-    return ({ home: 'الرئيسية', dashboard: 'لوحاتي', cohorts: 'الدفعات', 'cohort-detail': 'الدفعة', badges: 'الأوسمة', login: 'تسجيل الدخول', new: 'لوحة جديدة', 'board-students': 'جدول المتابعة', 'board-public': 'عرض اللوحة', 'board-settings': 'إعدادات اللوحة', 'not-found': 'الصفحة غير موجودة' })[activeKey] || 'وسام';
+    return ({ home: 'الرئيسية', dashboard: 'لوحاتي', cohorts: 'الدفعات', 'cohort-detail': 'الدفعة', badges: 'الأوسمة', login: 'تسجيل الدخول', new: 'لوحة جديدة', 'board-students': 'جدول المتابعة', 'board-public': 'عرض المحتوى', 'board-settings': 'إعدادات اللوحة', 'not-found': 'الصفحة غير موجودة' })[activeKey] || 'وسام';
 }

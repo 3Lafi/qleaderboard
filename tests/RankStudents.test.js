@@ -47,3 +47,52 @@ test('tracking table puts visible students before hidden students', () => {
     ];
     assert.deepEqual(sortTrackingStudents(list).map(s => s.name), ['خالد', 'سالم', 'أحمد', 'بدر']);
 });
+
+test('students completing on the same day tie at the same rank (dense ranking)', () => {
+    const a = student({ name: 'سعد', progress: 100, isCompleted: true, completedDate: '2026-09-15' });
+    const b = student({ name: 'أحمد', progress: 100, isCompleted: true, completedDate: '2026-09-15' });
+    const c = student({ name: 'بدر', progress: 100, isCompleted: true, completedDate: '2026-09-16' });
+
+    const ranked = rankStudents([a, b, c]);
+    assert.deepEqual(ranked.map(s => ({ name: s.name, rank: s.rank })), [
+        { name: 'أحمد', rank: 1 },
+        { name: 'سعد', rank: 1 },
+        { name: 'بدر', rank: 2 },
+    ]);
+});
+
+test('students completing seconds apart on the same day share the same rank', () => {
+    const s1 = student({ name: 'محمد', progress: 100, isCompleted: true, completedDate: '2026-09-15T10:00:00Z' });
+    const s2 = student({ name: 'علي', progress: 100, isCompleted: true, completedDate: '2026-09-15T10:00:30Z' });
+    const s3 = student({ name: 'إبراهيم', progress: 100, isCompleted: true, completedDate: '2026-09-15T10:15:00Z' });
+
+    const ranked = rankStudents([s1, s2, s3]);
+    assert.deepEqual(ranked.map(s => s.rank), [1, 1, 1]);
+});
+
+test('if all students completed on the same day, every student gets rank 1', () => {
+    const students = [
+        student({ name: 'يوسف', progress: 100, isCompleted: true, completedDate: '2026-09-15' }),
+        student({ name: 'حمزة', progress: 100, isCompleted: true, completedDate: '2026-09-15' }),
+        student({ name: 'عبدالله', progress: 100, isCompleted: true, completedDate: '2026-09-15' }),
+        student({ name: 'عمر', progress: 100, isCompleted: true, completedDate: '2026-09-15' }),
+    ];
+
+    const ranked = rankStudents(students);
+    assert.deepEqual(ranked.map(s => s.rank), [1, 1, 1, 1]);
+    assert.deepEqual(ranked.map(s => s.name), ['عبدالله', 'عمر', 'حمزة', 'يوسف'].sort((x, y) => x.localeCompare(y, 'ar')));
+});
+
+test('incomplete students with the same progress share the same rank', () => {
+    const a = student({ name: 'أحمد', progress: 60 });
+    const b = student({ name: 'باسم', progress: 60 });
+    const c = student({ name: 'جاسم', progress: 30 });
+
+    const ranked = rankStudents([a, b, c]);
+    assert.deepEqual(ranked.map(s => ({ name: s.name, rank: s.rank })), [
+        { name: 'أحمد', rank: 1 },
+        { name: 'باسم', rank: 1 },
+        { name: 'جاسم', rank: 2 },
+    ]);
+});
+

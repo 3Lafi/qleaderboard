@@ -14,6 +14,7 @@ export class Student {
         this.createdAt = data.createdAt || null;
         this.hidden = data.hidden === true;
         this.visibilityOverride = data.visibilityOverride || '';
+        this.rank = null;
         // ترتيب السور ضمن النطاق باتجاه الحفظ المعتمد في إعدادات اللوحة
         this.scope = orderedScopeSurahs || [];
     }

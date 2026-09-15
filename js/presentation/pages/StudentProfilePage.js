@@ -132,7 +132,7 @@ export default function StudentProfilePage(container, { params = {}, layout, use
     }
 
     function render(profile) {
-        if (!profile) {
+        if (!profile || !profile.student) {
             unavailable();
             return;
         }
@@ -156,7 +156,7 @@ export default function StudentProfilePage(container, { params = {}, layout, use
             students: students.map((entry, index) => ({
                 id: entry.id,
                 name: entry.name,
-                rank: index + 1,
+                rank: entry.rank ?? (index + 1),
                 progress: entry.progress,
                 completed: entry.isCompleted,
             })),

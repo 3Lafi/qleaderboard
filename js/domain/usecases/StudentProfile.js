@@ -19,6 +19,8 @@ function buildStudentProfile(board, studentId, { excludeHidden = false } = {}) {
     const scope = board.orderedSurahs();
     const students = rankStudents(Object.entries(board.students).filter(([, data]) => !excludeHidden || data?.hidden !== true).map(([id, data]) =>
         new Student(id, data, scope, resolvePriorSurahs(board, data))));
-    const rank = students.findIndex(s => s.id === studentId) + 1;
-    return { student: students[rank - 1], rank, students, boardName: board.settings.name };
+    const student = students.find(s => s.id === studentId);
+    if (!student) return null;
+    const rank = student.rank ?? (students.findIndex(s => s.id === studentId) + 1);
+    return { student, rank, students, boardName: board.settings.name };
 }

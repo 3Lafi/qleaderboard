@@ -1,8 +1,6 @@
 import { escapeHtml, toast } from '../views/ui.js';
-import { normalizeArabic } from '../../shared/text-utils.js';
 import { primaryDestinations, primarySection, boardDestinations, isBoardOwner } from '../../application/navigation/navigation-model.js';
 import { NAV_ICONS as ICONS } from './NavigationIcons.js';
-import { updateStudentsNav, bindStudentsNav } from './SidebarStudentsNav.js';
 
 export function sidebarHtml(activeKey = '', context = {}) {
     return `
@@ -14,15 +12,14 @@ export function sidebarHtml(activeKey = '', context = {}) {
                 </a>
                 <button class="nav-icon-button sidebar-close-btn" id="sidebarCloseBtn" type="button" aria-label="إغلاق القائمة">${ICONS.close}</button>
             </div>
+            <nav class="sidebar-global" id="sidebarGlobalNav" aria-label="التنقل الرئيسي">${renderGlobalNavHtml(activeKey, context.user)}</nav>
             <div class="sidebar-body">
-                <nav class="sidebar-global" id="sidebarGlobalNav" aria-label="التنقل الرئيسي">${renderGlobalNavHtml(activeKey, context.user)}</nav>
-                <div id="sidebarCreateHost"></div>
-                <section class="sidebar-workspace" id="sidebarWorkspaceHost"></section>
-                <section class="sidebar-picker" id="sidebarBoardPicker" hidden aria-label="اختيار اللوحة"></section>
-                <nav class="sidebar-board-nav" id="sidebarContextHost" aria-label="صفحات اللوحة" hidden></nav>
-                <section class="sidebar-roster" id="sidebarStudentsHost" hidden></section>
+                <section class="sidebar-boards-section" id="sidebarBoardsHost"></section>
             </div>
-            <div class="sidebar-footer" id="sidebarUserSection"></div>
+            <div class="sidebar-bottom">
+                <div class="sidebar-create-wrap" id="sidebarCreateHost"></div>
+                <div class="sidebar-footer" id="sidebarUserSection"></div>
+            </div>
         </div>`;
 }
 
@@ -34,34 +31,75 @@ export function renderGlobalNavHtml(activeKey = '', user = null, board = null) {
         </a>`).join('');
 }
 
-function workspaceHtml(board, user, pickerOpen) {
-    if (!user && !board?.id) return '';
-    const owned = isBoardOwner(board, user);
-    const name = board?.settings?.name || board?.name || 'اختر لوحة';
-    const meta = board?.id ? (board.settings ? (board.settings.isPublic === false ? 'لوحة خاصة' : 'لوحة عامة') : 'جارٍ تحميل اللوحة…') : 'انتقل إلى لوحة المتابعة';
-    const copy = `<span class="workspace-icon">${ICONS.boards}</span><span class="workspace-copy"><strong>${escapeHtml(name)}</strong><small>${meta}</small></span>`;
-    return `<p class="nav-section-label">${board?.id ? 'اللوحة الحالية' : 'لوحات المتابعة'}</p>
-        ${user && (!board?.id || owned) ? `<button class="workspace-switcher" id="boardSwitcherBtn" type="button" aria-expanded="${pickerOpen}" aria-controls="sidebarBoardPicker">${copy}<span class="nav-chevron">${ICONS.back}</span></button>` : `<div class="workspace-switcher">${copy}</div>`}`;
-}
-
 export function renderContextHtml(board, activeKey = '', user = null, activeStudentId = '') {
     return boardDestinations(board, user).map(item => `
-        <a href="${item.href}" class="sidebar-nav-link board-nav-link ${activeKey === item.key ? 'active' : ''}" ${activeKey === item.key ? `aria-current="${activeStudentId ? 'true' : 'page'}"` : ''}>
+        <a href="${item.href}" class="capsule-btn sidebar-nav-link board-nav-link ${activeKey === item.key ? 'active' : ''}" ${activeKey === item.key ? `aria-current="${activeStudentId ? 'true' : 'page'}"` : ''}>
             ${ICONS[item.icon]}<span>${item.label}</span>
         </a>`).join('');
 }
 
-export function renderBoardPickerHtml(boards = [], activeBoard = null) {
-    return `<label class="nav-search">${ICONS.search}<input type="search" id="boardPickerSearch" aria-label="ابحث باسم اللوحة" placeholder="ابحث باسم اللوحة" autocomplete="off"></label>
-        <nav class="picker-list" id="boardPickerList" aria-label="اختيار لوحة">
-            ${boards.map(board => {
-                const name = board.settings?.name || board.name || 'لوحة بدون اسم';
-                const selected = String(board.id) === String(activeBoard?.id);
-                return `<a href="/edit/${encodeURIComponent(board.id)}/students" class="picker-row ${selected ? 'active' : ''}" data-board-row data-name="${escapeHtml(normalizeArabic(name))}" ${selected ? 'aria-current="true"' : ''}><span>${escapeHtml(name)}</span>${selected ? ICONS.check : ''}</a>`;
+export function capsuleHtml(board, activeKey = '', user = null, activeStudentId = '') {
+    if (!board?.id) return '';
+    const name = board.settings?.name || board.name || 'لوحة المتابعة';
+    const isPublic = board.settings?.isPublic !== false;
+    const meta = isPublic ? 'لوحة عامة' : 'لوحة خاصة';
+
+    return `
+        <div class="sidebar-board-capsule active" aria-current="true">
+            <div class="capsule-header">
+                <span class="capsule-icon">${ICONS.boards}</span>
+                <div class="capsule-info">
+                    <strong class="capsule-title" title="${escapeHtml(name)}">${escapeHtml(name)}</strong>
+                    <span class="capsule-meta">${meta}</span>
+                </div>
+                <span class="board-item-badge">المفتوحة</span>
+            </div>
+            <nav class="capsule-actions" aria-label="أزرار اللوحة">
+                ${renderContextHtml(board, activeKey, user, activeStudentId)}
+            </nav>
+        </div>`;
+}
+
+export function boardsListHtml(boards = [], activeBoard = null, user = null, activeKey = '', activeStudentId = '') {
+    if (!user) return '';
+
+    // Ensure activeBoard is present in the list if loaded
+    const allBoards = [...boards];
+    if (activeBoard?.id && !allBoards.some(b => String(b.id) === String(activeBoard.id))) {
+        allBoards.unshift(activeBoard);
+    }
+
+    if (allBoards.length === 0) {
+        return `
+            <p class="nav-section-label">لوحات المتابعة</p>
+            <p class="nav-empty">ستظهر لوحاتك هنا بعد إنشائها.</p>`;
+    }
+
+    return `
+        <p class="nav-section-label">لوحات المتابعة (${allBoards.length})</p>
+        <nav class="sidebar-boards-list" aria-label="قائمة اللوحات">
+            ${allBoards.map(b => {
+                const name = b.settings?.name || b.name || 'لوحة بدون اسم';
+                const isSelected = String(b.id) === String(activeBoard?.id);
+                const isOwner = isBoardOwner(b, user);
+                const defaultHref = isOwner ? `/edit/${encodeURIComponent(b.id)}/students` : `/b/${encodeURIComponent(b.id)}`;
+
+                if (isSelected) {
+                    const targetBoard = activeBoard?.id === b.id ? activeBoard : b;
+                    return capsuleHtml(targetBoard, activeKey, user, activeStudentId);
+                }
+
+                return `
+                    <a href="${defaultHref}" class="sidebar-board-item" title="${escapeHtml(name)}">
+                        <span class="board-item-icon">${ICONS.boards}</span>
+                        <span class="board-item-name">${escapeHtml(name)}</span>
+                    </a>`;
             }).join('')}
-            <p class="nav-empty" id="boardPickerEmpty" ${boards.length ? 'hidden' : ''}>${boards.length ? 'لا توجد لوحة بهذا الاسم.' : 'ستظهر لوحاتك هنا بعد إنشائها.'}</p>
-        </nav>
-        <a class="nav-text-link" href="/dashboard">عرض كل اللوحات</a>`;
+        </nav>`;
+}
+
+export function renderBoardPickerHtml(boards = [], activeBoard = null) {
+    return boardsListHtml(boards, activeBoard);
 }
 
 function userHtml(user) {
@@ -71,68 +109,37 @@ function userHtml(user) {
         <div class="sidebar-account-actions"><a class="nav-about" href="/">عن وسام</a><button class="sidebar-signout-btn" id="sidebarSignOutBtn" type="button">${ICONS.signout}<span>تسجيل الخروج</span></button></div>`;
 }
 
-// Update only changed sections so live data does not steal keyboard focus or reset searches.
+// Update only changed sections so live data does not steal keyboard focus or reset interactions.
 function patch(host, html) {
     if (host && host._markup !== html) { host.innerHTML = html; host._markup = html; }
 }
 
-export function updateSidebarActive(sidebar, activeKey = '', { activeBoard = null, user = null, boards = [], studentsNav = null, boardPickerOpen = false } = {}) {
+export function updateSidebarActive(sidebar, activeKey = '', { activeBoard = null, user = null, boards = [], studentsNav = null } = {}) {
     if (!sidebar) return;
     const brand = sidebar.querySelector('#sidebarBrand');
     brand?.setAttribute('href', user ? '/dashboard' : '/');
     brand?.setAttribute('aria-label', `وسام — ${user ? 'لوحاتي' : 'الرئيسية'}`);
     patch(sidebar.querySelector('#sidebarGlobalNav'), renderGlobalNavHtml(activeKey, user, activeBoard));
-    patch(sidebar.querySelector('#sidebarCreateHost'), user ? `<a href="/new" class="sidebar-create ${activeKey === 'new' ? 'active' : ''}" ${activeKey === 'new' ? 'aria-current="page"' : ''}>${ICONS.newBoard}<span>إنشاء لوحة جديدة</span></a>` : '');
-    patch(sidebar.querySelector('#sidebarWorkspaceHost'), workspaceHtml(activeBoard, user, boardPickerOpen));
-    const context = sidebar.querySelector('#sidebarContextHost');
-    context.hidden = !activeBoard?.id;
-    patch(context, activeBoard ? renderContextHtml(activeBoard, activeKey, user, studentsNav?.activeStudentId) : '');
-    const picker = sidebar.querySelector('#sidebarBoardPicker');
-    picker.hidden = !boardPickerOpen;
-    if (boardPickerOpen) {
-        const query = picker.querySelector('input')?.value || '';
-        const wasSearching = document.activeElement === picker.querySelector('input');
-        patch(picker, renderBoardPickerHtml(boards, activeBoard));
-        const input = picker.querySelector('input');
-        if (input) input.value = query;
-        if (wasSearching && document.activeElement !== input) input?.focus({ preventScroll: true });
-        filterBoards(sidebar, query);
+
+    const boardsHost = sidebar.querySelector('#sidebarBoardsHost');
+    if (boardsHost) {
+        boardsHost.hidden = !user;
+        patch(boardsHost, boardsListHtml(boards, activeBoard, user, activeKey, studentsNav?.activeStudentId));
     }
-    updateStudentsNav(sidebar, activeBoard ? studentsNav : null);
+
+    patch(sidebar.querySelector('#sidebarCreateHost'), user ? `<a href="/new" class="sidebar-create ${activeKey === 'new' ? 'active' : ''}" ${activeKey === 'new' ? 'aria-current="page"' : ''}>${ICONS.newBoard}<span>إنشاء لوحة جديدة</span></a>` : '');
     patch(sidebar.querySelector('#sidebarUserSection'), userHtml(user));
 }
 
-function filterBoards(sidebar, value) {
-    const query = normalizeArabic(value).trim();
-    let count = 0;
-    sidebar.querySelectorAll('[data-board-row]').forEach(row => {
-        row.hidden = !row.dataset.name.includes(query);
-        if (!row.hidden) count++;
-    });
-    const empty = sidebar.querySelector('#boardPickerEmpty');
-    if (empty) empty.hidden = count > 0;
-}
-
-export function bindSidebarEvents(sidebar, { closeDrawer, toggleBoardPicker, signOut }) {
+export function bindSidebarEvents(sidebar, { closeDrawer, signOut } = {}) {
     sidebar.addEventListener('click', async event => {
-        if (event.target.closest('#sidebarCloseBtn')) return closeDrawer();
-        if (event.target.closest('#boardSwitcherBtn')) return toggleBoardPicker();
+        if (event.target.closest('#sidebarCloseBtn')) return closeDrawer?.();
         if (event.target.closest('#sidebarSignOutBtn')) {
             const button = event.target.closest('button');
             button.disabled = true;
-            try { await signOut(); toast('تم تسجيل الخروج'); }
+            try { await signOut?.(); toast('تم تسجيل الخروج'); }
             catch { toast('تعذر تسجيل الخروج حالياً', 'error'); }
             finally { if (button.isConnected) button.disabled = false; }
         }
     });
-    sidebar.addEventListener('input', event => {
-        if (event.target.id === 'boardPickerSearch') filterBoards(sidebar, event.target.value);
-    });
-    sidebar.addEventListener('keydown', event => {
-        if (event.key === 'Escape' && !sidebar.querySelector('#sidebarBoardPicker').hidden) {
-            event.stopPropagation();
-            toggleBoardPicker(false);
-        }
-    });
-    bindStudentsNav(sidebar);
 }
