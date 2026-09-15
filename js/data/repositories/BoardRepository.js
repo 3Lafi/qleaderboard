@@ -132,7 +132,7 @@ export const BoardRepository = {
         });
     },
 
-    async addStudent(boardId, name, currentCount, { cohortStudentId = '' } = {}) {
+    async addStudent(boardId, name, currentCount, { cohortStudentId = '', hidden = false } = {}) {
         if (currentCount >= LIMITS.MAX_STUDENTS_PER_BOARD) {
             throw new Error(`لا يمكن تجاوز ${LIMITS.MAX_STUDENTS_PER_BOARD} طالباً في اللوحة الواحدة.`);
         }
@@ -144,6 +144,7 @@ export const BoardRepository = {
                 completedDate: null,
                 createdAt: serverTimestamp(),
                 ...(cohortStudentId ? { cohortStudentId: String(cohortStudentId) } : {}),
+                ...(hidden ? { hidden: true } : {}),
             },
             updatedAt: serverTimestamp(),
         });
@@ -158,8 +159,20 @@ export const BoardRepository = {
     },
 
     async deleteStudent(boardId, studentId) {
+        const snapshot = await getDoc(boardRef(boardId));
+        const cohortStudentId = snapshot.data()?.students?.[studentId]?.cohortStudentId;
         await updateDoc(boardRef(boardId), {
             [`students.${studentId}`]: deleteField(),
+            ...(cohortStudentId ? { excludedCohortStudentIds: arrayUnion(String(cohortStudentId)) } : {}),
+            updatedAt: serverTimestamp(),
+        });
+    },
+
+    async setStudentVisibility(boardId, studentId, hidden, override = '', cohortStudentId = '') {
+        await updateDoc(boardRef(boardId), {
+            [`students.${studentId}.hidden`]: Boolean(hidden),
+            [`students.${studentId}.visibilityOverride`]: override ? override : deleteField(),
+            ...(cohortStudentId ? { [`students.${studentId}.cohortStudentId`]: String(cohortStudentId) } : {}),
             updatedAt: serverTimestamp(),
         });
     },

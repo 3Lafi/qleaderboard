@@ -157,6 +157,7 @@ export default async function CohortPage(container, { toast, params, layout, nav
                 if (disposed) return;
                 nameInput.value = '';
                 render();
+                await syncProgression({ silent: true });
                 host.querySelector('#cohortStudentName')?.focus({ preventScroll: true });
                 host.querySelector('#cohortSummary').textContent = cohortSummaryText(cohort);
             } catch (error) {
@@ -186,6 +187,7 @@ export default async function CohortPage(container, { toast, params, layout, nav
                 ids.forEach((id, index) => { cohort.students[id] = { name: names[index] }; });
                 toast(`تمت إضافة ${ids.length} طالباً`, 'success');
                 render();
+                await syncProgression({ silent: true });
             } catch (error) {
                 console.error(error);
                 toast(error?.message || 'تعذر إضافة الأسماء', 'error');
@@ -298,17 +300,27 @@ export default async function CohortPage(container, { toast, params, layout, nav
             button.textContent = 'جارٍ الإنشاء…';
             try {
                 const scope = scopeFor(dialog.querySelector('input[name="programScope"]:checked').value);
-                const settings = sanitizeSettings({ ...defaultSettings(), name, scope, direction: 'reverse', priorMode: 'auto' });
+                const settings = sanitizeSettings({ ...defaultSettings(), name, scope, direction: 'reverse', priorMode: 'auto', cohortId: cohort.id });
                 const boardId = await BoardRepository.create(user.uid, settings);
+                try {
+                    await CohortRepository.linkProgram(cohort.id, boardId);
+                } catch (linkError) {
+                    console.error('Failed to link program to cohort', linkError);
+                }
                 let added = 0;
                 for (const student of students) {
                     try {
-                        await BoardRepository.addStudent(boardId, student.name, added);
+                        await BoardRepository.addStudent(boardId, student.name, added, { cohortStudentId: student.id, hidden: true });
                         added += 1;
                     } catch (error) {
                         console.error('cohort import failed', student.name, error);
                     }
                 }
+                const boards = await BoardRepository.listMine(user.uid);
+                await applyProgression(planProgression({ cohort, boards }), {
+                    addStudent: (targetId, studentName, count, extra) => BoardRepository.addStudent(targetId, studentName, count, extra),
+                    setStudentVisibility: (targetId, studentId, hidden, cohortStudentId) => BoardRepository.setStudentVisibility(targetId, studentId, hidden, '', cohortStudentId),
+                });
                 dialog.close();
                 toast(`أُنشئ «${name}» بـ ${added} طالباً`, 'success');
                 navigate(`/edit/${boardId}`);
@@ -340,7 +352,7 @@ export default async function CohortPage(container, { toast, params, layout, nav
         host2.innerHTML = `
             <ol class="cohort-path-list">
                 ${linkedBoards.map((board, index) => {
-                    const members = Object.values(board.students || {}).filter(s => s?.cohortStudentId);
+                    const members = Object.values(board.students || {}).filter(s => s?.cohortStudentId && s.hidden !== true);
                     const done = members.filter(s => {
                         const scopeSet = board.orderedSurahs();
                         const memorized = new Set(s.memorized || []);
@@ -373,10 +385,11 @@ export default async function CohortPage(container, { toast, params, layout, nav
                 return;
             }
             const result = await applyProgression(plan, {
-                addStudent: (boardId, name, count, extra) => BoardRepository.addStudent(boardId, name, count, extra)
+                addStudent: (boardId, name, count, extra) => BoardRepository.addStudent(boardId, name, count, extra),
+                setStudentVisibility: (boardId, studentId, hidden, cohortStudentId) => BoardRepository.setStudentVisibility(boardId, studentId, hidden, '', cohortStudentId),
             });
-            if (status) status.textContent = `نُقل ${result.added} طالباً إلى البرنامج التالي${result.failed.length ? ` — تعذّر ${result.failed.length}` : ''}.`;
-            if (!silent) toast(`نُقل ${result.added} طالباً تلقائياً`, 'success');
+            if (status) status.textContent = `تمت مزامنة ${result.added + result.updated} سجلاً${result.failed.length ? ` — تعذّر ${result.failed.length}` : ''}.`;
+            if (!silent) toast('تم تحديث ظهور الطلاب حسب تقدّمهم', 'success');
             await loadPath();
         } catch (error) {
             console.error(error);

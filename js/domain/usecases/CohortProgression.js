@@ -6,6 +6,7 @@
 // 3) الطالب الذي أتمّ برنامجاً ينتقل إلى **البرنامج التالي في الترتيب** إن لم يكن فيه.
 //    لا يُنقل إلى برامج أبعد، ولا يُنقل من برنامج لم يتمّه.
 import { normalizeArabic } from '../../shared/text-utils.js';
+import { autoPriorSurahs } from './PriorMemorization.js';
 
 const norm = name => normalizeArabic(name).replace(/\s+/g, ' ').trim();
 
@@ -33,7 +34,12 @@ export function orderedPrograms(cohort, boards = []) {
             ordered.push(board);
         }
     }
-    return ordered;
+    const linkOrder = new Map((cohort?.programs || []).map((entry, index) => [String(entry.boardId), index]));
+    return ordered.sort((a, b) => {
+        const aPrior = autoPriorSurahs(a.settings?.scope).length;
+        const bPrior = autoPriorSurahs(b.settings?.scope).length;
+        return aPrior - bPrior || (linkOrder.get(String(a.id)) ?? 9999) - (linkOrder.get(String(b.id)) ?? 9999);
+    });
 }
 
 /**
@@ -66,33 +72,30 @@ export function hasCompleted(board, record) {
  */
 export function planProgression({ cohort, boards = [] } = {}) {
     const programs = orderedPrograms(cohort, boards);
-    const moves = [];
+    const moves = [], visibility = [];
 
     for (const member of cohort?.listStudents?.() || []) {
-        let lastCompleted = -1;
         for (let index = 0; index < programs.length; index += 1) {
-            if (hasCompleted(programs[index], findRecord(programs[index], member))) lastCompleted = index;
+            const target = programs[index];
+            if ((target.excludedCohortStudentIds || []).map(String).includes(String(member.id))) continue;
+            const record = findRecord(target, member);
+            const eligible = index === 0 || programs.slice(0, index).every(program => hasCompleted(program, findRecord(program, member)));
+            const override = record?.data?.visibilityOverride;
+            const hidden = override === 'shown' ? false : override === 'hidden' ? true : !eligible;
+            if (!record) {
+                let move = moves.find(item => item.boardId === target.id);
+                if (!move) {
+                    move = { boardId: target.id, boardName: target.settings?.name || 'برنامج', currentCount: Object.keys(target.students || {}).length, students: [] };
+                    moves.push(move);
+                }
+                move.students.push({ cohortStudentId: member.id, name: member.name, hidden });
+            } else if (Boolean(record.data.hidden) !== hidden || String(record.data.cohortStudentId || '') !== String(member.id)) {
+                visibility.push({ boardId: target.id, studentId: record.studentId, cohortStudentId: member.id, hidden });
+            }
         }
-        if (lastCompleted === -1 || lastCompleted + 1 >= programs.length) continue;
-
-        const target = programs[lastCompleted + 1];
-        if (findRecord(target, member)) continue; // موجود بالفعل في البرنامج التالي
-
-        const from = programs[lastCompleted];
-        let move = moves.find(item => item.boardId === target.id);
-        if (!move) {
-            move = { boardId: target.id, boardName: target.settings?.name || 'برنامج', currentCount: Object.keys(target.students || {}).length, students: [] };
-            moves.push(move);
-        }
-        move.students.push({
-            cohortStudentId: member.id,
-            name: member.name,
-            fromBoardId: from.id,
-            fromBoardName: from.settings?.name || 'برنامج',
-        });
     }
 
-    return { moves, total: moves.reduce((sum, move) => sum + move.students.length, 0), programs: programs.length };
+    return { moves, visibility, total: moves.reduce((sum, move) => sum + move.students.length, 0) + visibility.length, programs: programs.length };
 }
 
 /**
@@ -100,14 +103,14 @@ export function planProgression({ cohort, boards = [] } = {}) {
  * @param {ReturnType<typeof planProgression>} plan
  * @param {{addStudent:(boardId:string,name:string,count:number,extra?:Object)=>Promise<string>}} io
  */
-export async function applyProgression(plan, { addStudent } = {}) {
+export async function applyProgression(plan, { addStudent, setStudentVisibility } = {}) {
     let added = 0;
     const failed = [];
     for (const move of plan?.moves || []) {
         let count = move.currentCount;
         for (const student of move.students) {
             try {
-                await addStudent(move.boardId, student.name, count, { cohortStudentId: student.cohortStudentId });
+                await addStudent(move.boardId, student.name, count, { cohortStudentId: student.cohortStudentId, hidden: student.hidden });
                 count += 1;
                 added += 1;
             } catch (error) {
@@ -116,5 +119,15 @@ export async function applyProgression(plan, { addStudent } = {}) {
             }
         }
     }
-    return { added, failed };
+    let updated = 0;
+    for (const change of plan?.visibility || []) {
+        try {
+            await setStudentVisibility(change.boardId, change.studentId, change.hidden, change.cohortStudentId);
+            updated += 1;
+        } catch (error) {
+            console.error('visibility sync failed', change.studentId, error);
+            failed.push(change.studentId);
+        }
+    }
+    return { added, updated, failed };
 }

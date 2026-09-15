@@ -1,4 +1,3 @@
-// تدرّج الدفعة: المجتاز ينتقل للبرنامج التالي المرتبط
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { planProgression, applyProgression, orderedPrograms, findRecord } from '../js/domain/usecases/CohortProgression.js';
@@ -7,78 +6,69 @@ import { Leaderboard } from '../js/domain/models/Leaderboard.js';
 import { expandScope } from '../js/shared/quran-data.js';
 
 const juz = n => ({ type: 'juz', juzNumbers: [n], curriculum: null, surahNumbers: expandScope({ type: 'juz', juzNumbers: [n] }) });
-const board = (id, name, juzNumber, students = {}) => new Leaderboard(id, {
-    settings: { name, scope: juz(juzNumber), direction: 'reverse', cohortId: 'c1' },
-    students,
-});
-const full = juzNumber => expandScope({ type: 'juz', juzNumbers: [juzNumber] });
+const full = n => juz(n).surahNumbers;
+const board = (id, n, students = {}, extra = {}) => new Leaderboard(id, { settings: { name: `جزء ${n}`, scope: juz(n), direction: 'reverse', cohortId: 'c1' }, students, ...extra });
+const cohort = (students = { m1: { name: 'صالح' } }) => new Cohort('c1', { name: 'دفعة', students, programs: [{ boardId: 'b28' }, { boardId: 'b30' }, { boardId: 'b29' }] });
 
-const cohort = () => new Cohort('c1', {
-    name: 'دفعة',
-    students: { m1: { name: 'صالح' }, m2: { name: 'عزام' }, m3: { name: 'جديد' } },
-    programs: [{ boardId: 'b29' }, { boardId: 'b28' }],
+test('Juz programs always progress 30 then 29 then 28 regardless of link order', () => {
+    assert.deepEqual(orderedPrograms(cohort(), [board('b28', 28), board('b29', 29), board('b30', 30)]).map(item => item.id), ['b30', 'b29', 'b28']);
 });
 
-test('programs follow the cohort link order', () => {
-    const boards = [board('b28', 'جزء 28', 28), board('b29', 'جزء 29', 29)];
-    assert.deepEqual(orderedPrograms(cohort(), boards).map(b => b.id), ['b29', 'b28']);
+test('new cohort students exist in every program but later programs start hidden', () => {
+    const plan = planProgression({ cohort: cohort(), boards: [board('b30', 30), board('b29', 29), board('b28', 28)] });
+    assert.deepEqual(plan.moves.map(move => [move.boardId, move.students[0].hidden]), [['b30', false], ['b29', true], ['b28', true]]);
 });
 
-test('a student who completed a program moves to the next one only', () => {
+test('completing Juz 30 reveals Juz 29 while Juz 28 remains hidden', () => {
     const boards = [
-        board('b29', 'جزء 29', 29, { s1: { name: 'صالح', cohortStudentId: 'm1', memorized: full(29) } }),
-        board('b28', 'جزء 28', 28, {}),
+        board('b30', 30, { s30: { name: 'صالح', cohortStudentId: 'm1', memorized: full(30) } }),
+        board('b29', 29, { s29: { name: 'صالح', cohortStudentId: 'm1', memorized: [], hidden: true } }),
+        board('b28', 28, { s28: { name: 'صالح', cohortStudentId: 'm1', memorized: [], hidden: true } }),
     ];
-    const plan = planProgression({ cohort: cohort(), boards });
-    assert.equal(plan.total, 1);
-    assert.equal(plan.moves[0].boardId, 'b28');
-    assert.deepEqual(plan.moves[0].students.map(s => s.name), ['صالح']);
+    assert.deepEqual(planProgression({ cohort: cohort(), boards }).visibility, [{ boardId: 'b29', studentId: 's29', cohortStudentId: 'm1', hidden: false }]);
 });
 
-test('students who have not completed stay put, and new members stay put', () => {
+test('completing 30 and 29 reveals 28; reversing 30 hides both later programs', () => {
     const boards = [
-        board('b29', 'جزء 29', 29, {
-            s1: { name: 'صالح', cohortStudentId: 'm1', memorized: full(29) },
-            s2: { name: 'عزام', cohortStudentId: 'm2', memorized: [67, 68] },
-        }),
-        board('b28', 'جزء 28', 28, {}),
+        board('b30', 30, { s30: { name: 'صالح', cohortStudentId: 'm1', memorized: full(30) } }),
+        board('b29', 29, { s29: { name: 'صالح', cohortStudentId: 'm1', memorized: full(29) } }),
+        board('b28', 28, { s28: { name: 'صالح', cohortStudentId: 'm1', memorized: [], hidden: true } }),
     ];
-    const plan = planProgression({ cohort: cohort(), boards });
-    assert.deepEqual(plan.moves[0].students.map(s => s.name), ['صالح'], 'عزام لم يتمّ فيبقى، وجديد ليس في أي برنامج');
+    assert.deepEqual(planProgression({ cohort: cohort(), boards }).visibility, [{ boardId: 'b28', studentId: 's28', cohortStudentId: 'm1', hidden: false }]);
+    boards[0].students.s30.memorized = [];
+    boards[1].students.s29.hidden = false;
+    boards[2].students.s28.hidden = false;
+    assert.deepEqual(planProgression({ cohort: cohort(), boards }).visibility, [
+        { boardId: 'b29', studentId: 's29', cohortStudentId: 'm1', hidden: true },
+        { boardId: 'b28', studentId: 's28', cohortStudentId: 'm1', hidden: true },
+    ]);
 });
 
-test('no duplicates: a student already in the next program is not added again', () => {
+test('teacher visibility overrides survive automatic progression', () => {
     const boards = [
-        board('b29', 'جزء 29', 29, { s1: { name: 'صالح', cohortStudentId: 'm1', memorized: full(29) } }),
-        board('b28', 'جزء 28', 28, { s9: { name: 'صالح  ', cohortStudentId: 'm1', memorized: [] } }),
-    ];
-    assert.equal(planProgression({ cohort: cohort(), boards }).total, 0);
-});
-
-test('a student who finished the last program has nowhere to go', () => {
-    const boards = [
-        board('b29', 'جزء 29', 29, { s1: { name: 'صالح', cohortStudentId: 'm1', memorized: full(29) } }),
-        board('b28', 'جزء 28', 28, { s2: { name: 'صالح', cohortStudentId: 'm1', memorized: full(28) } }),
+        board('b30', 30, { s30: { name: 'صالح', cohortStudentId: 'm1', memorized: [] } }),
+        board('b29', 29, { s29: { name: 'صالح', cohortStudentId: 'm1', memorized: [], visibilityOverride: 'shown' } }),
+        board('b28', 28, { s28: { name: 'صالح', cohortStudentId: 'm1', memorized: [], hidden: true, visibilityOverride: 'hidden' } }),
     ];
     assert.equal(planProgression({ cohort: cohort(), boards }).total, 0);
 });
 
-test('records are matched by link first, then by normalized name', () => {
-    const b = board('b29', 'جزء 29', 29, { s1: { name: 'عبد الله  السالم', memorized: full(29) } });
-    const found = findRecord(b, { id: 'm9', name: 'عبد الله السالم' });
-    assert.equal(found?.studentId, 's1');
+test('a student deleted from one board is not recreated by cohort synchronization', () => {
+    const plan = planProgression({ cohort: cohort(), boards: [board('b30', 30), board('b29', 29, {}, { excludedCohortStudentIds: ['m1'] })] });
+    assert.equal(plan.moves.some(move => move.boardId === 'b29'), false);
 });
 
-test('applying the plan adds students with their cohort link and counts', async () => {
-    const boards = [
-        board('b29', 'جزء 29', 29, { s1: { name: 'صالح', cohortStudentId: 'm1', memorized: full(29) } }),
-        board('b28', 'جزء 28', 28, {}),
-    ];
-    const plan = planProgression({ cohort: cohort(), boards });
+test('records are matched by cohort link first, then normalized name', () => {
+    assert.equal(findRecord(board('b30', 30, { s1: { name: 'عبد الله  السالم', memorized: full(30) } }), { id: 'm9', name: 'عبد الله السالم' })?.studentId, 's1');
+});
+
+test('applying synchronization adds hidden state and updates visibility', async () => {
     const calls = [];
-    const result = await applyProgression(plan, {
-        addStudent: async (boardId, name, count, extra) => { calls.push({ boardId, name, count, extra }); return 'new-id'; }
+    const result = await applyProgression({ moves: [{ boardId: 'b29', currentCount: 0, students: [{ name: 'صالح', cohortStudentId: 'm1', hidden: true }] }], visibility: [{ boardId: 'b28', studentId: 's28', cohortStudentId: 'm1', hidden: false }] }, {
+        addStudent: async (boardId, name, count, extra) => calls.push({ type: 'add', boardId, name, count, extra }),
+        setStudentVisibility: async (boardId, studentId, hidden, cohortStudentId) => calls.push({ type: 'visibility', boardId, studentId, hidden, cohortStudentId }),
     });
-    assert.equal(result.added, 1);
-    assert.deepEqual(calls[0], { boardId: 'b28', name: 'صالح', count: 0, extra: { cohortStudentId: 'm1' } });
+    assert.deepEqual(result, { added: 1, updated: 1, failed: [] });
+    assert.deepEqual(calls[0].extra, { cohortStudentId: 'm1', hidden: true });
+    assert.deepEqual(calls[1], { type: 'visibility', boardId: 'b28', studentId: 's28', hidden: false, cohortStudentId: 'm1' });
 });

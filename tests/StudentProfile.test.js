@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Leaderboard } from '../js/domain/models/Leaderboard.js';
-import { publicStudentProfile } from '../js/domain/usecases/StudentProfile.js';
+import { publicStudentProfile, ownerStudentProfile } from '../js/domain/usecases/StudentProfile.js';
 
 function board(isPublic = true) {
     return new Leaderboard('sample', {
@@ -29,6 +29,14 @@ test('student profile uses board ranking and curriculum scope', () => {
 test('private or missing boards do not expose a student profile', () => {
     assert.equal(publicStudentProfile(board(false), 'first'), null);
     assert.equal(publicStudentProfile(null, 'first'), null);
+});
+
+test('a student hidden from a public board remains available to its owner only', () => {
+    const current = board();
+    current.ownerUid = 'owner';
+    current.students.first.hidden = true;
+    assert.equal(publicStudentProfile(current, 'first'), null);
+    assert.equal(ownerStudentProfile(current, 'first', 'owner')?.student.id, 'first');
 });
 
 test('missing and inherited student keys do not resolve to a profile', () => {

@@ -522,6 +522,10 @@ button:disabled { cursor: wait; opacity: .6; }
     .profile-collection-options { font-size: .73rem; }
 }
 
+.memorization-sheet tr.is-hidden-student > * { background:#fafaf8; }
+.memorization-sheet tr.is-hidden-student .sheet-student-top > a { color:var(--text-muted); }
+.sheet-hidden-badge { display:inline-flex; align-items:center; min-height:22px; padding:2px 7px; border-radius:6px; background:#f0eee8; color:#776f61; font-size:.62rem; font-weight:700; }
+
 /* إعداد اللوحة: قرارات واضحة، معاينة ثابتة، وخطوة واحدة في كل مرة. */
 .board-setup { padding: 4px 0 60px; }
 .board-setup [hidden] { display: none !important; }

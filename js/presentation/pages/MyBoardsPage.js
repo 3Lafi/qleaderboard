@@ -2,9 +2,11 @@
 import { boardShareUrl, copyToClipboard, escapeHtml } from '../views/ui.js';
 import { normalizeArabic } from '../../shared/text-utils.js';
 import { createFeedbackState } from '../layout/FeedbackStateView.js';
+import { planProgression, applyProgression } from '../../domain/usecases/CohortProgression.js';
 
 export default async function MyBoardsPage(container, { layout, user, services, setTitle, refresh }) {
     const BoardRepository = services.boards;
+    const CohortRepository = services.cohorts;
     setTitle('لوحاتي — وسام');
     layout?.setActiveBoard(null);
 
@@ -26,6 +28,22 @@ export default async function MyBoardsPage(container, { layout, user, services, 
     let boards;
     try {
         boards = await BoardRepository.listMine(user.uid);
+        try {
+            const cohorts = await CohortRepository.listMine(user.uid);
+            let synchronized = false;
+            for (const cohort of cohorts) {
+                const plan = planProgression({ cohort, boards });
+                if (!plan.total) continue;
+                const result = await applyProgression(plan, {
+                    addStudent: (boardId, name, count, extra) => BoardRepository.addStudent(boardId, name, count, extra),
+                    setStudentVisibility: (boardId, studentId, hidden, cohortStudentId) => BoardRepository.setStudentVisibility(boardId, studentId, hidden, '', cohortStudentId),
+                });
+                synchronized ||= result.added + result.updated > 0;
+            }
+            if (synchronized) boards = await BoardRepository.listMine(user.uid);
+        } catch (error) {
+            console.error('Cohort progression sync failed', error);
+        }
     } catch (err) {
         console.error(err);
         host.replaceChildren(createFeedbackState({

@@ -8,6 +8,7 @@ import { scopeSummaryText } from '../views/SurahPickerView.js';
 import { matchesQueryNameOrNumber } from '../../shared/text-utils.js';
 import { createFeedbackState } from '../layout/FeedbackStateView.js';
 import { autoPriorSurahs, priorSummaryText } from '../../domain/usecases/PriorMemorization.js';
+import { planProgression, applyProgression } from '../../domain/usecases/CohortProgression.js';
 
 export default async function BoardSettingsPage(container, { toast, params = {}, navigate, layout, user, services, setTitle, signal, refresh }) {
     const BoardRepository = services.boards;
@@ -234,22 +235,16 @@ export default async function BoardSettingsPage(container, { toast, params = {},
     cohortSelect.addEventListener('change', refreshCohortHint);
     loadCohorts();
 
-    // نسخ أسماء الدفعة إلى اللوحة (مع ربط كل طالب بعضوه)
-    async function syncCohortStudents(cohortId, targetBoardId = board?.id, currentStudents = board?.students || {}) {
+    // يضع أعضاء الدفعة في كل برامجها، ويخفي البرامج التي لم يبلغوها بعد.
+    async function syncCohortStudents(cohortId) {
         const cohort = myCohorts.find(c => String(c.id) === String(cohortId));
-        if (!cohort || !targetBoardId) return 0;
-        const existingByName = new Set(Object.values(currentStudents).map(s => String(s?.name || '').trim()));
-        const linked = new Set(Object.values(currentStudents).map(s => String(s?.cohortStudentId || '')).filter(Boolean));
-        let count = Object.keys(currentStudents).length;
-        let added = 0;
-        for (const member of cohort.listStudents()) {
-            if (linked.has(String(member.id)) || existingByName.has(member.name)) continue;
-            try {
-                await BoardRepository.addStudent(targetBoardId, member.name, count, { cohortStudentId: member.id });
-                count += 1; added += 1;
-            } catch (error) { console.error('cohort import failed', member.name, error); }
-        }
-        return added;
+        if (!cohort) return 0;
+        const boards = await BoardRepository.listMine(user.uid);
+        const result = await applyProgression(planProgression({ cohort, boards }), {
+            addStudent: (targetId, name, count, extra) => BoardRepository.addStudent(targetId, name, count, extra),
+            setStudentVisibility: (targetId, studentId, hidden, cohortStudentId) => BoardRepository.setStudentVisibility(targetId, studentId, hidden, '', cohortStudentId),
+        });
+        return result.added;
     }
     if (isEdit) {
         savedSnapshot = formSnapshot(); refreshSaveState();
@@ -314,7 +309,7 @@ export default async function BoardSettingsPage(container, { toast, params = {},
                 if (newSettings.cohortId) {
                     try {
                         await CohortRepository.linkProgram(newSettings.cohortId, id);
-                        addedFromCohort = await syncCohortStudents(newSettings.cohortId, id, {});
+                        addedFromCohort = await syncCohortStudents(newSettings.cohortId);
                     } catch (error) { console.error(error); }
                 }
                 await layout?.refreshUserBoards?.();

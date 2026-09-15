@@ -148,7 +148,7 @@ export default function BoardPage(container, { toast, params, layout, user, serv
         }
 
         const orderedScope = board.orderedSurahs();
-        const students = Object.entries(board.students).map(([id, data]) =>
+        const students = Object.entries(board.students).filter(([, data]) => data?.hidden !== true).map(([id, data]) =>
             new Student(id, data, orderedScope, resolvePriorSurahs(board, data)));
         rankedStudents = rankStudents(students);
         layout?.setStudentsNav({

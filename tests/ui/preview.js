@@ -28,6 +28,7 @@ if (progressCase === 'zero') Object.values(fixture.students).forEach(student => 
 if (progressCase === 'hidden') fixture.settings.showClassProgress = false;
 if (progressCase === 'empty') fixture.students = {};
 if (new URLSearchParams(fixtureSearch).get('privateBoard') === '1') fixture.settings.isPublic = false;
+if (new URLSearchParams(fixtureSearch).get('hiddenStudent') === '1') fixture.students.gamma.hidden = true;
 // برنامج جزء 29: طلاب انتقلوا من جزء 30 ولا يملكون محفوظاً في الخطة الحالية
 if (new URLSearchParams(fixtureSearch).get('program') === 'juz29') {
     fixture.settings.scope = { type: 'juz', juzNumbers: [29], curriculum: null, surahNumbers: expandScope({ type: 'juz', juzNumbers: [29] }) };
@@ -90,6 +91,7 @@ for (const key of Object.keys(CohortRepository)) CohortRepository[key] = CohortR
 BoardRepository.renameStudent = async (_boardId,id,name)=>{fixture.students[id].name=name;};
 BoardRepository.setStudentPrior = async (_boardId,id,surahs)=>{fixture.students[id].priorSurahs=[...(surahs||[])];};
 BoardRepository.deleteStudent = async (_boardId,id)=>{delete fixture.students[id];};
+BoardRepository.setStudentVisibility = async (_boardId,id,hidden,override='')=>{fixture.students[id].hidden=hidden;fixture.students[id].visibilityOverride=override;};
 function checkSaveFailure() {
     const failure = document.querySelector('#failNext');
     if (failure?.checked) { failure.checked = false; throw Error('Simulated save failure'); }

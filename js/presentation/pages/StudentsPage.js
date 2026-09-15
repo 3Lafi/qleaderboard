@@ -7,9 +7,11 @@ import { surahName, expandScope } from '../../shared/quran-data.js';
 import { matchesQueryNameOrNumber, matchesStudentName } from '../../shared/text-utils.js';
 import { LIMITS } from '../../shared/config.js';
 import { createFeedbackState } from '../layout/FeedbackStateView.js';
+import { planProgression, applyProgression } from '../../domain/usecases/CohortProgression.js';
 
 export default async function StudentsPage(container, { toast, params, layout, user, services, setTitle, signal, onDispose }) {
     const BoardRepository = services.boards;
+    const CohortRepository = services.cohorts;
     setTitle('جدول المتابعة — وسام');
     const boardId = params.boardId;
     const board = await BoardRepository.get(boardId);
@@ -96,6 +98,7 @@ export default async function StudentsPage(container, { toast, params, layout, u
             <a id="studentProfileLink" class="btn btn-secondary">ملف الطالب والأوسمة ↗</a>
             <button type="button" id="editStudentPrior" class="btn btn-secondary">المحتسب من برامج سابقة</button>
             <button type="button" id="renameStudent" class="btn btn-secondary">تعديل الاسم</button>
+            <button type="button" id="toggleStudentVisibility" class="btn btn-secondary"></button>
             <button type="button" id="deleteStudent" class="btn btn-secondary sheet-delete">حذف الطالب</button>
         </dialog>
     `;
@@ -143,6 +146,21 @@ export default async function StudentsPage(container, { toast, params, layout, u
 
     let actionStudentId = null;
 
+    async function syncLinkedPrograms() {
+        if (!board.settings.cohortId) return;
+        const [cohort, boards] = await Promise.all([
+            CohortRepository.get(board.settings.cohortId),
+            BoardRepository.listMine(user.uid),
+        ]);
+        if (!cohort) return;
+        const plan = planProgression({ cohort, boards });
+        if (!plan.total) return;
+        await applyProgression(plan, {
+            addStudent: (targetId, name, count, extra) => BoardRepository.addStudent(targetId, name, count, extra),
+            setStudentVisibility: (targetId, studentId, hidden, cohortStudentId) => BoardRepository.setStudentVisibility(targetId, studentId, hidden, '', cohortStudentId),
+        });
+    }
+
     const recorder = createMemorizationRecorder({
         getStudent: student,
         persist: async ({ id, surah, selected }, change) => {
@@ -150,6 +168,7 @@ export default async function StudentsPage(container, { toast, params, layout, u
             board.students[id].memorized = change.memorized;
             if (change.isNowComplete && !change.wasComplete) board.students[id].completedDate = { toMillis: () => Date.now() };
             else if (!change.isNowComplete && change.wasComplete) board.students[id].completedDate = null;
+            if (change.isNowComplete !== change.wasComplete) await syncLinkedPrograms();
         },
         onChange: ({ id, surah, status }) => {
             if (disposed) return;
@@ -227,10 +246,10 @@ export default async function StudentsPage(container, { toast, params, layout, u
                 </thead>
                 <tbody>
                     ${students.map((s, r) => `
-                        <tr data-student-row="${s.id}">
+                        <tr data-student-row="${s.id}" class="${s.hidden ? 'is-hidden-student' : ''}">
                             <th scope="row" class="sheet-student-column">
                                 <div class="sheet-student-top">
-                                    <a href="/edit/${boardId}/students/${s.id}" title="ملف الطالب والأوسمة">${escapeHtml(s.name)}</a>
+                                    <a href="/edit/${boardId}/students/${s.id}" title="ملف الطالب والأوسمة">${escapeHtml(s.name)}</a>${s.hidden ? '<span class="sheet-hidden-badge">مخفي</span>' : ''}
                                     <button type="button" class="sheet-icon-button" data-options="${s.id}" aria-label="خيارات ${escapeHtml(s.name)}">${uiIcon('ellipsis')}</button>
                                 </div>
                                 <div class="sheet-student-summary">${summaryHtml(s)}</div>
@@ -260,6 +279,7 @@ export default async function StudentsPage(container, { toast, params, layout, u
             const s = student(actionStudentId);
             if (!s) return;
             dialog.querySelector('#studentActionsTitle').textContent = s.name;
+            dialog.querySelector('#toggleStudentVisibility').textContent = s.hidden ? 'إظهار الطالب في اللوحة العامة' : 'إخفاء الطالب من اللوحة العامة';
             const link = dialog.querySelector('#studentProfileLink');
             link.href = `/edit/${boardId}/students/${s.id}`;
             link.hidden = false;
@@ -460,6 +480,25 @@ export default async function StudentsPage(container, { toast, params, layout, u
     }
 
     container.querySelector('#renameStudent').onclick = () => manageStudent(false);
+
+    container.querySelector('#toggleStudentVisibility').onclick = async () => {
+        const id = actionStudentId;
+        const current = board.students[id];
+        dialog.close();
+        if (!current) return;
+        const hidden = current.hidden !== true;
+        try {
+            await BoardRepository.setStudentVisibility(boardId, id, hidden, hidden ? 'hidden' : 'shown');
+            current.hidden = hidden;
+            current.visibilityOverride = hidden ? 'hidden' : 'shown';
+            renderTable();
+            syncStudentsNav();
+            toast(hidden ? 'تم إخفاء الطالب من اللوحة العامة' : 'تم إظهار الطالب في اللوحة العامة', 'success');
+        } catch (error) {
+            console.error(error);
+            toast('تعذر تغيير ظهور الطالب', 'error');
+        }
+    };
 
     // محتسب سابقاً لطالب واحد: يُضاف لأوسمته دون التأثير على تقدم الخطة
     container.querySelector('#editStudentPrior').onclick = () => manageStudentPrior();

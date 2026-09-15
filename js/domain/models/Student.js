@@ -12,6 +12,8 @@ export class Student {
             : [];
         this.completedDate = data.completedDate || null;
         this.createdAt = data.createdAt || null;
+        this.hidden = data.hidden === true;
+        this.visibilityOverride = data.visibilityOverride || '';
         // ترتيب السور ضمن النطاق باتجاه الحفظ المعتمد في إعدادات اللوحة
         this.scope = orderedScopeSurahs || [];
     }

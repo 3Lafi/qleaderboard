@@ -26,6 +26,7 @@ export class Leaderboard {
         this.createdAt = data.createdAt || null;
         this.updatedAt = data.updatedAt || null;
         this.previewRevision = data.previewRevision || '';
+        this.excludedCohortStudentIds = Array.isArray(data.excludedCohortStudentIds) ? data.excludedCohortStudentIds.map(String) : [];
         this.settings = {
             name: data.settings?.name || '',
             schoolName: data.settings?.schoolName || '',
@@ -74,6 +75,6 @@ export class Leaderboard {
     }
 
     studentsCount() {
-        return Object.keys(this.students).length;
+        return Object.values(this.students).filter(student => !student?.removed).length;
     }
 }
